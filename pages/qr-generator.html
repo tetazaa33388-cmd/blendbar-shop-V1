@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlendBar — สร้าง QR Code โต๊ะ</title>
+<link rel="stylesheet" href="../css/styles.css">
+<style>
+.qr-page { max-width: 900px; margin: 0 auto; padding: 28px; }
+.qr-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 24px; }
+.qr-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px; text-align: center;
+  transition: all var(--transition);
+}
+.qr-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+.qr-canvas { background: white; border-radius: 8px; padding: 8px; margin-bottom: 10px; }
+.qr-table-name { font-size: 1rem; font-weight: 800; color: var(--primary); }
+.qr-url { font-size: 0.65rem; color: var(--text-muted); word-break: break-all; margin-top: 4px; }
+.print-btn { display: none; }
+@media print {
+  .topbar, .controls, .print-btn { display: none !important; }
+  .qr-grid { grid-template-columns: repeat(4, 1fr); }
+  body { background: white; }
+  .qr-card { border: 1px solid #ddd; }
+  .qr-table-name { color: #000; }
+}
+.controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 20px; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner" style="max-width:900px;">
+    <a href="../index.html" class="btn btn-icon btn-ghost" style="font-size:1.3rem;">←</a>
+    <span class="topbar-title">🔲 สร้าง QR Code โต๊ะ</span>
+    <button class="btn btn-primary btn-sm" onclick="window.print()">🖨 พิมพ์ทั้งหมด</button>
+  </div>
+</div>
+
+<div class="qr-page" style="margin-top:70px;">
+  <div class="glass" style="padding:20px;">
+    <h2 style="font-size:1.1rem;font-weight:700;margin-bottom:8px;">⚙️ ตั้งค่า QR Code</h2>
+    <div class="controls">
+      <div>
+        <label class="input-label">จำนวนโต๊ะ</label>
+        <input type="number" class="input" id="tableCount" value="12" min="1" max="50" style="width:100px;">
+      </div>
+      <div>
+        <label class="input-label">Base URL</label>
+        <input type="text" class="input" id="baseUrl" value="file:///d:/test ai shop/pages/customer/welcome.html" style="width:360px;">
+      </div>
+      <button class="btn btn-secondary" onclick="generateAll()">🔄 สร้าง QR</button>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:10px;">💡 เปลี่ยน Base URL เป็น domain จริงของร้านก่อน deploy เช่น <code style="color:var(--primary);">https://blendbar.com/pages/customer/welcome.html</code></p>
+  </div>
+
+  <div class="qr-grid" id="qrGrid"></div>
+</div>
+
+<script src="../js/app.js"></script>
+<script>
+// Simple QR pattern generator (visual only, not scannable — for demo)
+// In production, use a real QR library like qrcode.js
+function drawQROnCanvas(canvas, text, tableId) {
+  const ctx = canvas.getContext('2d');
+  const size = 120;
+  canvas.width = size; canvas.height = size;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, size, size);
+
+  // Seed pseudo-random based on tableId for consistent pattern
+  let seed = tableId.split('').reduce((s, c) => s + c.charCodeAt(0), 0);
+  function rand() { seed = (seed * 1664525 + 1013904223) & 0xffffffff; return (seed >>> 0) / 0xffffffff; }
+
+  const cells = 10; const cellSize = size / cells;
+  ctx.fillStyle = '#0d0d1a';
+
+  for (let r = 0; r < cells; r++) {
+    for (let c = 0; c < cells; c++) {
+      // Finder patterns (corners)
+      const inCorner = (r < 3 && c < 3) || (r < 3 && c >= cells-3) || (r >= cells-3 && c < 3);
+      const isCornerEdge = (r === 0 || r === 2 || c === 0 || c === 2) && inCorner;
+      const isCornerInner = r === 1 && c === 1;
+
+      if (inCorner) {
+        if (isCornerEdge || ((r>=cells-3)&&(r===cells-3||r===cells-1||c===0||c===2))) {
+          ctx.fillStyle = '#0d0d1a';
+        } else if (isCornerInner) {
+          ctx.fillStyle = '#0d0d1a';
+        } else {
+          ctx.fillStyle = '#ffffff';
+        }
+      } else {
+        ctx.fillStyle = rand() > 0.5 ? '#0d0d1a' : '#ffffff';
+      }
+      ctx.beginPath();
+      ctx.roundRect(c * cellSize + 1, r * cellSize + 1, cellSize - 2, cellSize - 2, 2);
+      ctx.fill();
+    }
+  }
+
+  // Draw table label in center
+  ctx.fillStyle = '#a3e635';
+  ctx.font = `bold ${cellSize * 1.2}px Outfit, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(tableId, size/2, size/2);
+}
+
+function generateAll() {
+  const count = parseInt(document.getElementById('tableCount').value) || 12;
+  const baseUrl = document.getElementById('baseUrl').value.trim();
+  const grid = document.getElementById('qrGrid');
+  grid.innerHTML = '';
+
+  for (let i = 1; i <= count; i++) {
+    const tableId = `T${i}`;
+    const url = `${baseUrl}?table=${tableId}`;
+
+    const card = document.createElement('div');
+    card.className = 'qr-card animate-fadeInUp';
+    card.style.animationDelay = `${i * 0.04}s`;
+    card.innerHTML = `
+      <canvas class="qr-canvas" id="qr${tableId}"></canvas>
+      <div class="qr-table-name">โต๊ะ ${tableId}</div>
+      <div class="qr-url">${url}</div>
+      <a href="${url}" class="btn btn-ghost btn-sm" style="margin-top:8px;width:100%;font-size:0.75rem;" target="_blank">🔗 ทดสอบ</a>`;
+    grid.appendChild(card);
+
+    // Draw after DOM insertion
+    requestAnimationFrame(() => drawQROnCanvas(document.getElementById(`qr${tableId}`), url, tableId));
+  }
+}
+
+generateAll();
+</script>
+</body>
+</html>

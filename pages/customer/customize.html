@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BlendBar — ปรับแต่งเมนู</title>
+<link rel="stylesheet" href="../../css/styles.css">
+<style>
+.item-hero {
+  width:100%; padding:40px 0 28px; display:flex; flex-direction:column;
+  align-items:center; position:relative; overflow:hidden; text-align:center;
+}
+.item-hero-bg { position:absolute;inset:0;opacity:0.5; }
+.item-emoji-large { font-size:6rem;filter:drop-shadow(0 8px 24px rgba(0,0,0,0.5));position:relative;z-index:1;animation:float 3s ease-in-out infinite; }
+.item-hero-name { font-size:1.6rem;font-weight:800;margin-top:14px;position:relative;z-index:1; }
+.item-hero-desc { font-size:0.88rem;color:var(--text-muted);margin-top:6px;padding:0 24px;position:relative;z-index:1;line-height:1.5; }
+
+.section-block { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:12px; }
+.section-label { font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:12px;display:flex;align-items:center;gap:6px; }
+
+.size-row { display:flex;gap:8px; }
+.size-btn { flex:1;padding:12px 6px;border:1px solid var(--border);border-radius:var(--radius-sm);background:var(--surface2);text-align:center;cursor:pointer;transition:all var(--transition); }
+.size-btn:hover { border-color:var(--primary); }
+.size-btn.active { border-color:var(--primary);background:rgba(163,230,53,0.1); }
+.size-letter { font-size:1.3rem;font-weight:900;color:var(--primary); }
+.size-price { font-size:0.72rem;color:var(--text-muted);margin-top:2px; }
+
+.topping-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px; }
+.topping-chip {
+  padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  background:var(--surface2);cursor:pointer;transition:all var(--transition);
+  display:flex;align-items:center;gap:8px;font-size:0.85rem;
+}
+.topping-chip:hover { border-color:var(--primary); }
+.topping-chip.active { border-color:var(--primary);background:rgba(163,230,53,0.1);color:var(--primary); }
+.topping-chip-price { margin-left:auto;font-size:0.72rem;font-weight:700;color:var(--secondary); }
+
+.price-sticky {
+  position:fixed;bottom:0;left:0;right:0;
+  background:rgba(13,13,26,0.96);backdrop-filter:blur(16px);
+  border-top:1px solid var(--border);padding:14px 16px env(safe-area-inset-bottom,14px);z-index:90;
+}
+.price-sticky-inner { max-width:480px;margin:0 auto;display:flex;align-items:center;gap:14px; }
+.price-big { font-size:1.7rem;font-weight:900;color:var(--primary);flex:1; }
+.price-sublabel { font-size:0.72rem;color:var(--text-muted); }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <button onclick="history.back()" class="btn btn-icon btn-ghost" style="font-size:1.3rem;">←</button>
+    <span class="topbar-title">ปรับแต่งเมนู</span>
+    <a href="cart.html" class="btn btn-icon btn-ghost" style="font-size:1.3rem;position:relative;">🛒
+      <span class="cart-count" style="position:absolute;top:-4px;right:-4px;background:var(--accent);color:white;font-size:0.6rem;font-weight:700;width:18px;height:18px;border-radius:50%;display:none;align-items:center;justify-content:center;"></span>
+    </a>
+  </div>
+</div>
+
+<div id="pageContent" style="display:none;">
+  <div class="item-hero" id="itemHero">
+    <div class="item-hero-bg" id="heroBg"></div>
+    <div class="item-emoji-large" id="itemEmoji">🥤</div>
+    <h1 class="item-hero-name" id="itemName">Loading...</h1>
+    <p class="item-hero-desc" id="itemDesc"></p>
+  </div>
+
+  <div class="container" style="padding-top:16px;padding-bottom:120px;">
+    <!-- Size -->
+    <div class="section-block animate-fadeInUp">
+      <div class="section-label">📏 ขนาด</div>
+      <div class="size-row" id="sizeRow"></div>
+    </div>
+    <!-- Sweetness -->
+    <div class="section-block animate-fadeInUp delay-100">
+      <div class="section-label">🍬 ความหวาน</div>
+      <div class="option-group" id="sweetnessGroup"></div>
+    </div>
+    <!-- Ice -->
+    <div class="section-block animate-fadeInUp delay-200">
+      <div class="section-label">🧊 น้ำแข็ง</div>
+      <div class="option-group" id="iceGroup"></div>
+    </div>
+    <!-- Milk -->
+    <div class="section-block animate-fadeInUp delay-200">
+      <div class="section-label">🥛 ชนิดนม</div>
+      <div class="option-group" id="milkGroup"></div>
+    </div>
+    <!-- Toppings -->
+    <div class="section-block animate-fadeInUp delay-300">
+      <div class="section-label">🍿 ท็อปปิ้ง</div>
+      <div class="topping-grid" id="toppingGrid"></div>
+    </div>
+    <!-- Extras -->
+    <div class="section-block animate-fadeInUp delay-400">
+      <div class="section-label">⚡ เพิ่มพิเศษ</div>
+      <div class="topping-grid" id="extraGrid"></div>
+    </div>
+    <!-- Qty + Note -->
+    <div class="section-block animate-fadeInUp delay-400" style="display:flex;align-items:center;gap:16px;">
+      <div>
+        <div class="section-label">🔢 จำนวน</div>
+        <div class="qty-control">
+          <button class="qty-btn" id="qtyMinus">−</button>
+          <span class="qty-value" id="qtyVal">1</span>
+          <button class="qty-btn" id="qtyPlus">+</button>
+        </div>
+      </div>
+      <div style="flex:1;">
+        <div class="section-label">📝 หมายเหตุ</div>
+        <input class="input" id="noteInput" placeholder="เช่น ไม่ใส่น้ำตาล..." style="margin-top:0;">
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="notFound" style="display:none;text-align:center;padding:80px 16px;">
+  <div style="font-size:4rem;">😔</div>
+  <h2 style="margin-top:16px;">ไม่พบเมนูนี้</h2>
+  <a href="menu.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex;">← กลับหน้าเมนู</a>
+</div>
+
+<!-- Price Bar -->
+<div class="price-sticky" id="priceBar" style="display:none;">
+  <div class="price-sticky-inner">
+    <div>
+      <div class="price-sublabel">ราคารวม</div>
+      <div class="price-big" id="priceDisplay">฿0</div>
+    </div>
+    <button class="btn btn-primary" style="flex:2;padding:16px;" id="addBtn">🛒 เพิ่มลงตะกร้า</button>
+  </div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+const params = new URLSearchParams(window.location.search);
+const menuId = parseInt(params.get('id'));
+const tableId = params.get('table') || Store.getTable();
+const item = Utils.getMenuById(menuId);
+
+let sel = { size:'M', sweetness:75, ice:'normal', milk:'regular', toppings:[], extras:[], qty:1 };
+
+if (!item) {
+  document.getElementById('notFound').style.display = 'block';
+} else {
+  document.getElementById('pageContent').style.display = 'block';
+  document.getElementById('priceBar').style.display = 'block';
+  document.getElementById('itemEmoji').textContent = item.emoji;
+  document.getElementById('itemName').textContent = item.name;
+  document.getElementById('itemDesc').textContent = item.desc;
+  document.getElementById('heroBg').style.background = Utils.getCategoryColor(item.category);
+  document.title = `BlendBar — ${item.name}`;
+
+  function makeChips(el, opts, selKey, valKey, labelFn, priceKey) {
+    opts.forEach(opt => {
+      const btn = document.createElement('button');
+      btn.className = 'option-chip' + (opt[valKey] === sel[selKey] ? ' active' : '');
+      btn.textContent = labelFn(opt);
+      btn.onclick = () => {
+        sel[selKey] = opt[valKey];
+        el.querySelectorAll('.option-chip').forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        calcPrice();
+      };
+      el.appendChild(btn);
+    });
+  }
+
+  // Size
+  const sizeRow = document.getElementById('sizeRow');
+  SIZE_OPTIONS.forEach(s => {
+    const div = document.createElement('div');
+    div.className = 'size-btn' + (s.value === 'M' ? ' active' : '');
+    div.innerHTML = `<div class="size-letter">${s.label}</div><div class="size-price">${s.priceAdd>0?'+฿'+s.priceAdd:s.priceAdd<0?'-฿'+Math.abs(s.priceAdd):'ปกติ'}</div>`;
+    div.onclick = () => { sel.size = s.value; sizeRow.querySelectorAll('.size-btn').forEach(b=>b.classList.remove('active')); div.classList.add('active'); calcPrice(); };
+    sizeRow.appendChild(div);
+  });
+
+  makeChips(document.getElementById('sweetnessGroup'), SWEETNESS_OPTIONS, 'sweetness', 'value', o=>`${o.label}`, null);
+  makeChips(document.getElementById('iceGroup'), ICE_OPTIONS, 'ice', 'value', o=>o.label, null);
+  makeChips(document.getElementById('milkGroup'), MILK_OPTIONS, 'milk', 'value', o=>`${o.label}${o.priceAdd>0?' +฿'+o.priceAdd:''}`, null);
+
+  // Toppings
+  const toppingGrid = document.getElementById('toppingGrid');
+  TOPPINGS.forEach(top => {
+    const div = document.createElement('div');
+    div.className = 'topping-chip';
+    div.innerHTML = `<span>${top.emoji}</span><span>${top.label}</span><span class="topping-chip-price">+฿${top.price}</span>`;
+    div.onclick = () => {
+      const on = div.classList.toggle('active');
+      if (on) sel.toppings.push(top.id); else sel.toppings = sel.toppings.filter(id=>id!==top.id);
+      calcPrice();
+    };
+    toppingGrid.appendChild(div);
+  });
+
+  // Extras
+  const extraGrid = document.getElementById('extraGrid');
+  EXTRA_OPTIONS.forEach(ex => {
+    const div = document.createElement('div');
+    div.className = 'topping-chip';
+    div.innerHTML = `<span>${ex.emoji}</span><span>${ex.label}</span><span class="topping-chip-price">+฿${ex.price}</span>`;
+    div.onclick = () => {
+      const on = div.classList.toggle('active');
+      if (on) sel.extras.push(ex.id); else sel.extras = sel.extras.filter(id=>id!==ex.id);
+      calcPrice();
+    };
+    extraGrid.appendChild(div);
+  });
+
+  // Qty
+  document.getElementById('qtyMinus').onclick = () => { if(sel.qty>1){sel.qty--;document.getElementById('qtyVal').textContent=sel.qty;calcPrice();} };
+  document.getElementById('qtyPlus').onclick = () => { sel.qty++;document.getElementById('qtyVal').textContent=sel.qty;calcPrice(); };
+
+  calcPrice();
+
+  document.getElementById('addBtn').onclick = () => {
+    const unitPrice = getUnitPrice();
+    const toppingNames = sel.toppings.map(id=>TOPPINGS.find(t=>t.id===id)?.label).filter(Boolean).join(', ');
+    const extraNames = sel.extras.map(id=>EXTRA_OPTIONS.find(e=>e.id===id)?.label).filter(Boolean).join(', ');
+    const milkOpt = MILK_OPTIONS.find(m=>m.value===sel.milk);
+    const iceOpt = ICE_OPTIONS.find(i=>i.value===sel.ice);
+    const summary = [sel.size, `หวาน ${sel.sweetness}%`, iceOpt?.label, milkOpt?.label!=='นมสด'?milkOpt?.label:'', toppingNames, extraNames].filter(Boolean).join(' · ');
+    Store.addItem({
+      cartId: `${menuId}-${Date.now()}`,
+      menuId, name:item.name, emoji:item.emoji,
+      price:unitPrice, qty:sel.qty, size:sel.size,
+      sweetness:sel.sweetness, ice:sel.ice, milk:sel.milk,
+      toppings:sel.toppings, extras:sel.extras,
+      note:document.getElementById('noteInput').value,
+      summary,
+    });
+    Utils.showToast(`${item.name} เพิ่มลงตะกร้าแล้ว!`, '🛒');
+    setTimeout(()=>window.location.href=`cart.html?table=${tableId}`, 1200);
+  };
+}
+
+function getUnitPrice() {
+  const sizeOpt = SIZE_OPTIONS.find(s=>s.value===sel.size);
+  const milkOpt = MILK_OPTIONS.find(m=>m.value===sel.milk);
+  const topTotal = sel.toppings.reduce((s,id)=>s+(TOPPINGS.find(t=>t.id===id)?.price||0),0);
+  const exTotal = sel.extras.reduce((s,id)=>s+(EXTRA_OPTIONS.find(e=>e.id===id)?.price||0),0);
+  return item.price + (sizeOpt?.priceAdd||0) + (milkOpt?.priceAdd||0) + topTotal + exTotal;
+}
+
+function calcPrice() {
+  document.getElementById('priceDisplay').textContent = Utils.formatPrice(getUnitPrice() * sel.qty);
+}
+
+Utils.updateCartBadge();
+window.addEventListener('cartUpdate', Utils.updateCartBadge);
+</script>
+</body>
+</html>

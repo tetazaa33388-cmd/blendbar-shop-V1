@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BlendBar Admin — จัดการเมนู</title>
+<link rel="stylesheet" href="../../css/styles.css">
+<style>
+body { display:flex; }
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo-text{font-size:1.3rem;font-weight:900;}
+.sidebar-sub{font-size:0.72rem;color:var(--text-muted);margin-top:2px;}
+.sidebar-nav{padding:12px 8px;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-sm);color:var(--text-muted);text-decoration:none;font-size:0.9rem;font-weight:500;transition:all var(--transition);margin-bottom:2px;}
+.nav-item:hover,.nav-item.active{background:rgba(163,230,53,0.12);color:var(--primary);}
+.nav-item.active{font-weight:700;}
+.nav-icon{font-size:1.15rem;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-muted);}
+.main{margin-left:220px;flex:1;min-height:100vh;}
+.admin-topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(13,13,26,0.8);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50;}
+.content{padding:24px 28px;}
+
+.menu-table { width:100%;border-collapse:collapse; }
+.menu-table th { text-align:left;padding:10px 14px;font-size:0.78rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border); }
+.menu-table td { padding:12px 14px;border-bottom:1px solid var(--border);font-size:0.88rem;vertical-align:middle; }
+.menu-table tr:hover td { background:rgba(255,255,255,0.02); }
+.menu-table tr:last-child td { border-bottom:none; }
+
+.menu-emoji-cell { font-size:2rem; }
+.menu-name-cell { font-weight:600; }
+.menu-desc-cell { color:var(--text-muted);font-size:0.8rem;max-width:200px; }
+
+.toggle-switch { position:relative;width:44px;height:24px; }
+.toggle-switch input { opacity:0;width:0;height:0; }
+.slider { position:absolute;cursor:pointer;inset:0;background:var(--border);border-radius:24px;transition:0.3s; }
+.slider::before { content:'';position:absolute;width:18px;height:18px;left:3px;bottom:3px;background:white;border-radius:50%;transition:0.3s; }
+.toggle-switch input:checked + .slider { background:var(--primary); }
+.toggle-switch input:checked + .slider::before { transform:translateX(20px); }
+
+.action-cell { display:flex;gap:8px;align-items:center; }
+.icon-btn { width:32px;height:32px;border-radius:var(--radius-sm);border:1px solid var(--border);background:transparent;color:var(--text-muted);cursor:pointer;font-size:0.9rem;display:flex;align-items:center;justify-content:center;transition:all var(--transition); }
+.icon-btn:hover.edit { border-color:var(--primary);color:var(--primary); }
+.icon-btn:hover.delete { border-color:var(--danger);color:var(--danger); }
+
+/* Modal */
+.modal-backdrop { position:fixed;inset:0;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);z-index:200;display:none;align-items:center;justify-content:center;padding:20px; }
+.modal-backdrop.open { display:flex; }
+.modal-content { background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;animation:bounceIn 0.4s ease; }
+.modal-title { font-size:1.2rem;font-weight:800;margin-bottom:20px;display:flex;align-items:center;gap:10px; }
+.form-grid { display:grid;grid-template-columns:1fr 1fr;gap:14px; }
+.form-grid .full { grid-column:1/-1; }
+
+.cat-select, .status-select { width:100%;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Outfit',sans-serif;font-size:0.9rem;outline:none;transition:border-color var(--transition); }
+.cat-select:focus,.status-select:focus { border-color:var(--primary); }
+
+.emoji-picker { display:flex;flex-wrap:wrap;gap:8px;margin-top:8px; }
+.emoji-opt { font-size:1.5rem;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent;transition:all 0.15s; }
+.emoji-opt:hover,.emoji-opt.selected { border-color:var(--primary);background:rgba(163,230,53,0.1); }
+
+.search-input-wrap { position:relative;max-width:280px; }
+.search-input-wrap input { padding-left:36px; }
+.search-input-wrap::before { content:'🔍';position:absolute;left:12px;top:50%;transform:translateY(-50%);font-size:0.9rem; }
+
+.stats-row { display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px; }
+.mini-stat { background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;text-align:center; }
+.mini-val { font-size:1.4rem;font-weight:800; }
+.mini-lbl { font-size:0.75rem;color:var(--text-muted);margin-top:2px; }
+
+@media(max-width:900px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:16px;}.form-grid{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-text gradient-text">🥤 BlendBar</div>
+    <div class="sidebar-sub">Admin Dashboard</div>
+  </div>
+  <nav class="sidebar-nav">
+    <a href="dashboard.html" class="nav-item"><span class="nav-icon">📊</span> Dashboard</a>
+    <a href="orders.html" class="nav-item"><span class="nav-icon">📋</span> ออเดอร์</a>
+    <a href="menu-mgmt.html" class="nav-item active"><span class="nav-icon">🍹</span> จัดการเมนู</a>
+    <a href="#" class="nav-item"><span class="nav-icon">📦</span> สต็อกวัตถุดิบ</a>
+    <a href="#" class="nav-item"><span class="nav-icon">🎁</span> โปรโมชั่น</a>
+    <a href="#" class="nav-item"><span class="nav-icon">👥</span> สมาชิก</a>
+    <a href="#" class="nav-item"><span class="nav-icon">📈</span> รายงาน</a>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="font-weight:600;color:var(--text);">Admin User</div>
+    <div>BlendBar สาขาหลัก</div>
+    <a href="../customer/welcome.html?table=T1" style="color:var(--primary);font-size:0.8rem;display:block;margin-top:8px;">🔗 ดูหน้าลูกค้า</a>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="admin-topbar">
+    <span style="font-size:1.2rem;font-weight:800;">🍹 จัดการเมนู</span>
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="search-input-wrap">
+        <input type="text" class="input" id="searchInput" placeholder="ค้นหาเมนู..." style="padding-left:36px;">
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="openAddModal()">＋ เพิ่มเมนู</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <!-- Stats -->
+    <div class="stats-row animate-fadeInUp">
+      <div class="mini-stat">
+        <div class="mini-val" id="totalMenus" style="color:var(--primary);">0</div>
+        <div class="mini-lbl">เมนูทั้งหมด</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-val" id="activeMenus" style="color:var(--success);">0</div>
+        <div class="mini-lbl">เปิดขายอยู่</div>
+      </div>
+      <div class="mini-stat">
+        <div class="mini-val" id="avgPrice" style="color:var(--secondary);">฿0</div>
+        <div class="mini-lbl">ราคาเฉลี่ย</div>
+      </div>
+    </div>
+
+    <!-- Category Filter -->
+    <div class="cat-tabs" id="catFilter" style="margin-bottom:16px;"></div>
+
+    <!-- Menu Table -->
+    <div class="glass" style="overflow:hidden;">
+      <table class="menu-table" id="menuTable">
+        <thead>
+          <tr>
+            <th>เมนู</th>
+            <th>หมวดหมู่</th>
+            <th>ราคา</th>
+            <th>สถานะ</th>
+            <th>จัดการ</th>
+          </tr>
+        </thead>
+        <tbody id="menuTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-backdrop" id="menuModal">
+  <div class="modal-content">
+    <div class="modal-title">
+      <span id="modalTitleEmoji">✨</span>
+      <span id="modalTitle">เพิ่มเมนูใหม่</span>
+    </div>
+    <form id="menuForm" onsubmit="saveMenu(event)">
+      <div class="form-grid">
+        <!-- Emoji Picker -->
+        <div class="full">
+          <label class="input-label">ไอคอนเมนู</label>
+          <div class="emoji-picker" id="emojiPicker"></div>
+          <input type="hidden" id="formEmoji" value="🥤">
+        </div>
+        <!-- Name -->
+        <div class="full">
+          <label class="input-label">ชื่อเมนู *</label>
+          <input type="text" class="input" id="formName" placeholder="เช่น Mango Magic" required>
+        </div>
+        <!-- Desc -->
+        <div class="full">
+          <label class="input-label">คำอธิบาย</label>
+          <input type="text" class="input" id="formDesc" placeholder="รายละเอียดสั้นๆ">
+        </div>
+        <!-- Price -->
+        <div>
+          <label class="input-label">ราคา (฿) *</label>
+          <input type="number" class="input" id="formPrice" placeholder="89" min="0" required>
+        </div>
+        <!-- Category -->
+        <div>
+          <label class="input-label">หมวดหมู่ *</label>
+          <select class="cat-select" id="formCategory">
+            <option value="fruit">🍓 Fruit Smoothie</option>
+            <option value="yogurt">🥛 Yogurt</option>
+            <option value="protein">💪 Protein</option>
+            <option value="coffee">☕ Coffee</option>
+            <option value="soda">🫧 Soda</option>
+          </select>
+        </div>
+        <!-- Tags -->
+        <div class="full">
+          <label class="input-label">แท็ก</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;"><input type="checkbox" id="tagBest"> 🔥 ขายดี</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;"><input type="checkbox" id="tagNew"> ✨ ใหม่</label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:0.85rem;"><input type="checkbox" id="tagPop"> ⭐ ยอดนิยม</label>
+          </div>
+        </div>
+        <!-- Status -->
+        <div class="full">
+          <label class="input-label">สถานะ</label>
+          <select class="status-select" id="formStatus">
+            <option value="active">✅ เปิดขาย</option>
+            <option value="inactive">❌ ปิดชั่วคราว</option>
+          </select>
+        </div>
+      </div>
+      <input type="hidden" id="formId" value="">
+      <div style="display:flex;gap:12px;margin-top:20px;">
+        <button type="button" class="btn btn-ghost" style="flex:1;" onclick="closeModal()">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary" style="flex:2;">💾 บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+// Local menu overrides stored in localStorage
+function getMenuOverrides() {
+  try { return JSON.parse(localStorage.getItem('menu_overrides') || '{}'); } catch { return {}; }
+}
+function saveMenuOverrides(o) { localStorage.setItem('menu_overrides', JSON.stringify(o)); }
+
+function getCustomMenus() {
+  try { return JSON.parse(localStorage.getItem('custom_menus') || '[]'); } catch { return []; }
+}
+function saveCustomMenus(m) { localStorage.setItem('custom_menus', JSON.stringify(m)); }
+
+function getAllMenus() {
+  const overrides = getMenuOverrides();
+  const custom = getCustomMenus();
+  const base = MENU_DATA.map(m => ({ ...m, status: overrides[m.id]?.status ?? 'active', ...(overrides[m.id] || {}) }));
+  return [...base, ...custom];
+}
+
+let filterCat = 'all';
+let searchQ = '';
+let editingId = null;
+
+// Emoji options
+const EMOJIS = ['🥭','🍓','🫐','🍉','🍍','🌺','🍋','🥥','🍌','🍫','☕','🍮','🌿','🍯','💪','🧃','🥤','🍹','🫧','🌱','🍊','🍇','🍑','🫙'];
+
+function buildEmojiPicker(selected='🥤') {
+  const el = document.getElementById('emojiPicker');
+  el.innerHTML = '';
+  EMOJIS.forEach(e => {
+    const span = document.createElement('span');
+    span.className = 'emoji-opt' + (e === selected ? ' selected' : '');
+    span.textContent = e;
+    span.onclick = () => {
+      document.querySelectorAll('.emoji-opt').forEach(x => x.classList.remove('selected'));
+      span.classList.add('selected');
+      document.getElementById('formEmoji').value = e;
+    };
+    el.appendChild(span);
+  });
+}
+
+function buildCatFilter() {
+  const el = document.getElementById('catFilter');
+  el.innerHTML = '';
+  [{ id:'all', label:'ทั้งหมด', emoji:'✨' }, ...CATEGORIES.slice(1)].forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-tab' + (cat.id === filterCat ? ' active' : '');
+    btn.innerHTML = `${cat.emoji} ${cat.label}`;
+    btn.onclick = () => { filterCat = cat.id; buildCatFilter(); renderTable(); };
+    el.appendChild(btn);
+  });
+}
+
+function renderTable() {
+  const menus = getAllMenus();
+  const active = menus.filter(m => m.status !== 'inactive');
+
+  document.getElementById('totalMenus').textContent = menus.length;
+  document.getElementById('activeMenus').textContent = active.length;
+  const avg = Math.round(menus.reduce((s,m)=>s+m.price,0)/menus.length);
+  document.getElementById('avgPrice').textContent = `฿${avg}`;
+
+  const catMap = { fruit:'🍓 Fruit', yogurt:'🥛 Yogurt', protein:'💪 Protein', coffee:'☕ Coffee', soda:'🫧 Soda' };
+
+  let items = menus.filter(m => {
+    const matchCat = filterCat === 'all' || m.category === filterCat;
+    const matchQ = !searchQ || m.name.toLowerCase().includes(searchQ) || (m.desc||'').toLowerCase().includes(searchQ);
+    return matchCat && matchQ;
+  });
+
+  const tbody = document.getElementById('menuTableBody');
+  tbody.innerHTML = '';
+  if (items.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:var(--text-muted);">ไม่พบเมนู</td></tr>';
+    return;
+  }
+  items.forEach(m => {
+    const tr = document.createElement('tr');
+    const isActive = m.status !== 'inactive';
+    tr.innerHTML = `
+      <td>
+        <div style="display:flex;align-items:center;gap:12px;">
+          <span style="font-size:1.8rem;">${m.emoji}</span>
+          <div>
+            <div class="menu-name-cell">${m.name}</div>
+            <div class="menu-desc-cell">${m.desc||''}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge badge-primary">${catMap[m.category]||m.category}</span></td>
+      <td style="font-weight:700;color:var(--primary);">฿${m.price}</td>
+      <td>
+        <label class="toggle-switch">
+          <input type="checkbox" ${isActive?'checked':''} onchange="toggleStatus(${m.id||`'${m.name}'`},this.checked)">
+          <span class="slider"></span>
+        </label>
+      </td>
+      <td>
+        <div class="action-cell">
+          <button class="icon-btn edit" onclick="openEditModal(${m.id||`'${m.name}'`})" title="แก้ไข">✏️</button>
+          <button class="icon-btn delete" onclick="deleteMenu(${m.id||`'${m.name}'`})" title="ลบ">🗑</button>
+        </div>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+function toggleStatus(id, isActive) {
+  const overrides = getMenuOverrides();
+  if (!overrides[id]) overrides[id] = {};
+  overrides[id].status = isActive ? 'active' : 'inactive';
+  saveMenuOverrides(overrides);
+  Utils.showToast(isActive ? 'เปิดขายแล้ว ✅' : 'ปิดชั่วคราว ❌', isActive ? '✅' : '❌');
+  renderTable();
+}
+
+function deleteMenu(id) {
+  if (!confirm('ลบเมนูนี้?')) return;
+  // If custom menu
+  const customs = getCustomMenus().filter(m => m.id !== id && m.name !== id);
+  saveCustomMenus(customs);
+  // If base menu, just set override to hidden
+  const overrides = getMenuOverrides();
+  if (!overrides[id]) overrides[id] = {};
+  overrides[id].hidden = true;
+  saveMenuOverrides(overrides);
+  Utils.showToast('ลบเมนูแล้ว', '🗑');
+  renderTable();
+}
+
+function openAddModal() {
+  editingId = null;
+  document.getElementById('modalTitle').textContent = 'เพิ่มเมนูใหม่';
+  document.getElementById('modalTitleEmoji').textContent = '✨';
+  document.getElementById('formId').value = '';
+  document.getElementById('formName').value = '';
+  document.getElementById('formDesc').value = '';
+  document.getElementById('formPrice').value = '';
+  document.getElementById('formCategory').value = 'fruit';
+  document.getElementById('formStatus').value = 'active';
+  document.getElementById('tagBest').checked = false;
+  document.getElementById('tagNew').checked = false;
+  document.getElementById('tagPop').checked = false;
+  document.getElementById('formEmoji').value = '🥤';
+  buildEmojiPicker('🥤');
+  document.getElementById('menuModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const menu = getAllMenus().find(m => m.id === id || m.name === id);
+  if (!menu) return;
+  editingId = id;
+  document.getElementById('modalTitle').textContent = 'แก้ไขเมนู';
+  document.getElementById('modalTitleEmoji').textContent = '✏️';
+  document.getElementById('formId').value = id;
+  document.getElementById('formName').value = menu.name;
+  document.getElementById('formDesc').value = menu.desc || '';
+  document.getElementById('formPrice').value = menu.price;
+  document.getElementById('formCategory').value = menu.category;
+  document.getElementById('formStatus').value = menu.status || 'active';
+  document.getElementById('tagBest').checked = (menu.tags||[]).includes('bestseller');
+  document.getElementById('tagNew').checked = (menu.tags||[]).includes('new');
+  document.getElementById('tagPop').checked = (menu.tags||[]).includes('popular');
+  document.getElementById('formEmoji').value = menu.emoji || '🥤';
+  buildEmojiPicker(menu.emoji || '🥤');
+  document.getElementById('menuModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('menuModal').classList.remove('open'); }
+
+function saveMenu(e) {
+  e.preventDefault();
+  const name = document.getElementById('formName').value.trim();
+  const desc = document.getElementById('formDesc').value.trim();
+  const price = parseInt(document.getElementById('formPrice').value);
+  const category = document.getElementById('formCategory').value;
+  const status = document.getElementById('formStatus').value;
+  const emoji = document.getElementById('formEmoji').value;
+  const tags = [];
+  if (document.getElementById('tagBest').checked) tags.push('bestseller');
+  if (document.getElementById('tagNew').checked) tags.push('new');
+  if (document.getElementById('tagPop').checked) tags.push('popular');
+
+  if (editingId !== null) {
+    // Update override
+    const overrides = getMenuOverrides();
+    if (!overrides[editingId]) overrides[editingId] = {};
+    Object.assign(overrides[editingId], { name, desc, price, category, status, emoji, tags });
+    saveMenuOverrides(overrides);
+    // If custom menu
+    const customs = getCustomMenus();
+    const idx = customs.findIndex(m => m.id === editingId || m.name === editingId);
+    if (idx >= 0) { Object.assign(customs[idx], { name, desc, price, category, status, emoji, tags }); saveCustomMenus(customs); }
+  } else {
+    // New custom menu
+    const customs = getCustomMenus();
+    customs.push({ id: `custom_${Date.now()}`, name, desc, price, category, status, emoji, tags });
+    saveCustomMenus(customs);
+  }
+
+  Utils.showToast(editingId ? 'อัปเดตเมนูแล้ว ✅' : 'เพิ่มเมนูแล้ว ✅', '🍹');
+  closeModal();
+  renderTable();
+}
+
+document.getElementById('searchInput').addEventListener('input', e => { searchQ = e.target.value.toLowerCase(); renderTable(); });
+document.getElementById('menuModal').addEventListener('click', e => { if (e.target === document.getElementById('menuModal')) closeModal(); });
+
+buildEmojiPicker();
+buildCatFilter();
+renderTable();
+</script>
+</body>
+</html>

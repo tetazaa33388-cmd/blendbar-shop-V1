@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BlendBar — ชำระเงิน</title>
+<link rel="stylesheet" href="../../css/styles.css">
+<style>
+.payment-method {
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  cursor: pointer;
+  transition: all var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+.payment-method:hover { border-color: var(--primary); }
+.payment-method.selected { border-color: var(--primary); background: rgba(163,230,53,0.08); }
+.payment-icon { font-size: 2rem; }
+.payment-name { font-weight: 600; font-size: 0.95rem; }
+.payment-sub { font-size: 0.78rem; color: var(--text-muted); margin-top: 2px; }
+.payment-check { margin-left: auto; width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; transition: all var(--transition); }
+.payment-method.selected .payment-check { background: var(--primary); border-color: var(--primary); color: #0d0d1a; font-size: 0.8rem; }
+
+.qr-section { text-align: center; padding: 24px 0; }
+.qr-box {
+  display: inline-block;
+  background: white;
+  border-radius: 20px;
+  padding: 20px;
+  box-shadow: 0 8px 40px rgba(163,230,53,0.3);
+}
+.qr-grid {
+  width: 180px; height: 180px;
+  display: grid;
+  grid-template-columns: repeat(9, 1fr);
+  grid-template-rows: repeat(9, 1fr);
+  gap: 2px;
+}
+.qr-cell { border-radius: 2px; }
+
+.countdown-ring {
+  position: relative;
+  width: 80px; height: 80px;
+  margin: 16px auto;
+}
+.countdown-ring svg { transform: rotate(-90deg); }
+.countdown-ring circle { fill: none; stroke-width: 6; }
+.ring-bg { stroke: var(--border); }
+.ring-fill { stroke: var(--primary); stroke-linecap: round; transition: stroke-dashoffset 1s linear; }
+.countdown-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--primary);
+}
+
+.amount-display {
+  font-size: 2.5rem;
+  font-weight: 900;
+  text-align: center;
+  color: var(--primary);
+  margin: 8px 0;
+}
+
+.confirm-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.8);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+.confirm-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 40px 24px;
+  text-align: center;
+  max-width: 360px;
+  width: 100%;
+}
+.confirm-emoji { font-size: 5rem; display: block; margin-bottom: 16px; animation: bounceIn 0.6s ease; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <button onclick="history.back()" class="btn btn-icon btn-ghost" style="font-size:1.3rem;">←</button>
+    <span class="topbar-title">💳 ชำระเงิน</span>
+    <div style="width:44px;"></div>
+  </div>
+</div>
+
+<div class="container page-content">
+  <!-- Order Summary -->
+  <div class="glass" style="padding:16px;margin-bottom:16px;">
+    <div style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:10px;">📋 สรุปออเดอร์</div>
+    <div id="orderSummary"></div>
+    <div class="divider"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <span style="font-size:0.9rem;color:var(--text-muted);">โต๊ะ <strong id="tblDisplay" style="color:var(--primary);">T1</strong></span>
+      <div>
+        <span style="font-size:0.8rem;color:var(--text-muted);">ยอดชำระ</span>
+        <div class="amount-display" id="totalDisplay">฿0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Payment Methods -->
+  <div style="margin-bottom:20px;">
+    <div style="font-size:1rem;font-weight:700;margin-bottom:12px;">เลือกวิธีชำระเงิน</div>
+    <div id="payMethods">
+      <div class="payment-method selected" onclick="selectMethod(this,'promptpay')">
+        <span class="payment-icon">📱</span>
+        <div><div class="payment-name">PromptPay QR</div><div class="payment-sub">สแกนจ่ายผ่าน Mobile Banking</div></div>
+        <div class="payment-check">✓</div>
+      </div>
+      <div class="payment-method" onclick="selectMethod(this,'truemoney')">
+        <span class="payment-icon">💛</span>
+        <div><div class="payment-name">TrueMoney Wallet</div><div class="payment-sub">จ่ายผ่าน TrueMoney</div></div>
+        <div class="payment-check"></div>
+      </div>
+      <div class="payment-method" onclick="selectMethod(this,'card')">
+        <span class="payment-icon">💳</span>
+        <div><div class="payment-name">บัตรเครดิต / เดบิต</div><div class="payment-sub">Visa, Mastercard, JCB</div></div>
+        <div class="payment-check"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR Section (PromptPay) -->
+  <div id="qrSection" class="qr-section">
+    <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:16px;">สแกน QR Code เพื่อชำระเงิน</p>
+    <div class="qr-box">
+      <canvas id="qrCanvas" width="180" height="180"></canvas>
+    </div>
+    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:12px;">หมดอายุใน</p>
+    <div class="countdown-ring">
+      <svg width="80" height="80" viewBox="0 0 80 80">
+        <circle class="ring-bg" cx="40" cy="40" r="34"/>
+        <circle class="ring-fill" id="ringFill" cx="40" cy="40" r="34" stroke-dasharray="213.6" stroke-dashoffset="0"/>
+      </svg>
+      <div class="countdown-num" id="countdownNum">2:00</div>
+    </div>
+    <p style="font-size:0.75rem;color:var(--text-muted);">PromptPay: 089-XXX-XXXX</p>
+    <p style="font-size:0.7rem;color:rgba(163,230,53,0.7);margin-top:8px;">(ระบบ Demo — จะยืนยันอัตโนมัติ)</p>
+  </div>
+
+  <!-- Pay Now Button -->
+  <button class="btn btn-primary btn-full btn-lg" id="payBtn" style="margin-bottom:12px;">
+    ✅ ยืนยันการชำระเงิน
+  </button>
+  <p style="text-align:center;font-size:0.78rem;color:var(--text-muted);">🔒 การชำระเงินมีความปลอดภัย SSL</p>
+</div>
+
+<!-- Success Modal -->
+<div class="confirm-overlay" id="confirmOverlay" style="display:flex;display:none;">
+  <div class="confirm-box">
+    <span class="confirm-emoji">🎉</span>
+    <h2 style="font-size:1.5rem;font-weight:800;margin-bottom:8px;">ชำระเงินสำเร็จ!</h2>
+    <p style="color:var(--text-muted);margin-bottom:16px;">ออเดอร์ของคุณกำลังดำเนินการ</p>
+    <div style="background:var(--surface);border-radius:var(--radius);padding:16px;margin-bottom:20px;">
+      <div style="font-size:0.8rem;color:var(--text-muted);">หมายเลขออเดอร์</div>
+      <div id="orderIdDisplay" style="font-size:1rem;font-weight:700;color:var(--primary);margin-top:4px;"></div>
+      <div style="margin-top:8px;font-size:0.8rem;color:var(--text-muted);">คิวของคุณ</div>
+      <div id="queueDisplay" style="font-size:2.5rem;font-weight:900;color:var(--secondary);"></div>
+    </div>
+    <button class="btn btn-primary btn-full" id="trackBtn">📍 ติดตามออเดอร์</button>
+  </div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+const order = Store.getOrder();
+if (!order) { window.location.href = 'cart.html'; }
+
+document.getElementById('tblDisplay').textContent = order?.tableId || 'T1';
+document.getElementById('totalDisplay').textContent = Utils.formatPrice(order?.total || 0);
+document.getElementById('orderIdDisplay').textContent = order?.id || '';
+document.getElementById('queueDisplay').textContent = order?.queue || '–';
+
+// Order summary
+const summaryEl = document.getElementById('orderSummary');
+(order?.items || []).forEach(item => {
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:0.88rem;';
+  div.innerHTML = `<span>${item.emoji} ${item.name} ×${item.qty}</span><span style="color:var(--primary);font-weight:600;">${Utils.formatPrice(item.price * item.qty)}</span>`;
+  summaryEl.appendChild(div);
+});
+
+// Generate simple QR pattern on canvas
+const canvas = document.getElementById('qrCanvas');
+const ctx = canvas.getContext('2d');
+function drawQR() {
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, 180, 180);
+  const size = 18; const cells = 10;
+  const pattern = [];
+  for (let i = 0; i < cells * cells; i++) pattern.push(Math.random() > 0.45);
+  // force corners
+  [[0,0],[0,1],[1,0],[0,8],[0,9],[1,9],[8,0],[9,0],[9,1],[8,9],[9,8],[9,9]].forEach(([r,c]) => pattern[r*cells+c] = true);
+  ctx.fillStyle = '#0d0d1a';
+  for (let r = 0; r < cells; r++) for (let c = 0; c < cells; c++) {
+    if (pattern[r*cells+c]) { ctx.beginPath(); ctx.roundRect(c*18, r*18, 16, 16, 3); ctx.fill(); }
+  }
+}
+drawQR();
+
+// Countdown timer (2 min = 120s)
+let timeLeft = 120;
+const circumference = 2 * Math.PI * 34;
+const ringEl = document.getElementById('ringFill');
+const countdownEl = document.getElementById('countdownNum');
+
+const timer = setInterval(() => {
+  timeLeft--;
+  const pct = timeLeft / 120;
+  ringEl.style.strokeDashoffset = circumference * (1 - pct);
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  countdownEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  if (timeLeft <= 0) { clearInterval(timer); autoConfirm(); }
+  if (timeLeft === 30) { countdownEl.style.color = 'var(--warning)'; ringEl.style.stroke = 'var(--warning)'; }
+  if (timeLeft === 10) { countdownEl.style.color = 'var(--danger)'; ringEl.style.stroke = 'var(--danger)'; }
+}, 1000);
+
+// Payment methods
+let selectedMethod = 'promptpay';
+function selectMethod(el, method) {
+  selectedMethod = method;
+  document.querySelectorAll('.payment-method').forEach(m => { m.classList.remove('selected'); m.querySelector('.payment-check').textContent = ''; });
+  el.classList.add('selected');
+  el.querySelector('.payment-check').textContent = '✓';
+  document.getElementById('qrSection').style.display = method === 'promptpay' ? 'block' : 'none';
+}
+
+document.getElementById('payBtn').onclick = () => autoConfirm();
+
+function autoConfirm() {
+  clearInterval(timer);
+  const updatedOrder = { ...order, status: 'received', paymentStatus: 'paid' };
+  Store.setOrder(updatedOrder);
+  Store.clearCart();
+
+  // Save to "admin orders" in localStorage
+  const orders = JSON.parse(localStorage.getItem('admin_orders') || '[]');
+  orders.unshift(updatedOrder);
+  localStorage.setItem('admin_orders', JSON.stringify(orders));
+
+  document.getElementById('confirmOverlay').style.display = 'flex';
+  document.getElementById('trackBtn').onclick = () => {
+    window.location.href = `tracking.html?id=${updatedOrder.id}`;
+  };
+
+  // Play success sound
+  try {
+    const ac = new AudioContext();
+    const osc = ac.createOscillator();
+    const gain = ac.createGain();
+    osc.connect(gain); gain.connect(ac.destination);
+    osc.frequency.setValueAtTime(523, ac.currentTime);
+    osc.frequency.setValueAtTime(659, ac.currentTime + 0.15);
+    osc.frequency.setValueAtTime(784, ac.currentTime + 0.3);
+    gain.gain.setValueAtTime(0.3, ac.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.8);
+    osc.start(); osc.stop(ac.currentTime + 0.8);
+  } catch(e) {}
+}
+</script>
+</body>
+</html>

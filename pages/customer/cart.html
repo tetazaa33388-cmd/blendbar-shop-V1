@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>BlendBar — ตะกร้าสินค้า</title>
+<link rel="stylesheet" href="../../css/styles.css">
+<style>
+.cart-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  transition: all var(--transition);
+}
+.cart-item-emoji { font-size: 2.4rem; flex-shrink: 0; }
+.cart-item-info { flex: 1; }
+.cart-item-name { font-size: 1rem; font-weight: 700; }
+.cart-item-opts { font-size: 0.75rem; color: var(--text-muted); margin-top: 3px; line-height: 1.5; }
+.cart-item-price { font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-top: 6px; }
+.cart-item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+.remove-btn { background: none; border: none; color: var(--text-muted); font-size: 1.1rem; cursor: pointer; padding: 4px; transition: color var(--transition); }
+.remove-btn:hover { color: var(--danger); }
+
+.empty-cart { text-align: center; padding: 80px 16px; }
+.empty-emoji { font-size: 5rem; display: block; margin-bottom: 16px; }
+
+.summary-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+.summary-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 0.9rem; }
+.summary-row.total { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 14px; font-size: 1.15rem; font-weight: 800; }
+.summary-discount { color: var(--success); }
+
+.coupon-row { display: flex; gap: 8px; }
+.coupon-input { flex: 1; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="topbar-inner">
+    <button onclick="history.back()" class="btn btn-icon btn-ghost" style="font-size:1.3rem;">←</button>
+    <span class="topbar-title">🛒 ตะกร้าสินค้า</span>
+    <button id="clearBtn" class="btn btn-sm btn-ghost" style="color:var(--danger);">ล้าง</button>
+  </div>
+</div>
+
+<div class="container page-content">
+  <!-- Cart Items -->
+  <div id="cartList"></div>
+
+  <!-- Empty State -->
+  <div id="emptyCart" class="empty-cart" style="display:none;">
+    <span class="empty-emoji">🛒</span>
+    <h2>ตะกร้าว่างเปล่า</h2>
+    <p style="color:var(--text-muted);margin-top:8px;">เลือกเมนูที่คุณชอบได้เลย</p>
+    <a href="menu.html" class="btn btn-primary" style="margin-top:24px;">← กลับเลือกเมนู</a>
+  </div>
+
+  <!-- Coupon -->
+  <div id="couponSection" style="display:none;">
+    <div class="coupon-row" style="margin-bottom:12px;">
+      <input type="text" class="input coupon-input" id="couponInput" placeholder="🎟 รหัสคูปอง" style="text-transform:uppercase;">
+      <button class="btn btn-secondary btn-sm" onclick="applyCoupon()">ใช้งาน</button>
+    </div>
+    <div id="couponMsg" style="font-size:0.8rem;margin-top:-6px;margin-bottom:12px;"></div>
+  </div>
+
+  <!-- Summary -->
+  <div class="summary-card" id="summaryCard" style="display:none;">
+    <div class="summary-row"><span style="color:var(--text-muted);">ยอดรวม</span><span id="subtotalVal">฿0</span></div>
+    <div class="summary-row summary-discount" id="discountRow" style="display:none;"><span>💝 ส่วนลด</span><span id="discountVal">-฿0</span></div>
+    <div class="summary-row"><span style="color:var(--text-muted);">โต๊ะ</span><span id="tableVal" style="color:var(--primary);font-weight:600;">T1</span></div>
+    <div class="summary-row total"><span>ยอดสุทธิ</span><span id="totalVal" style="color:var(--primary);">฿0</span></div>
+  </div>
+
+  <!-- Checkout Button -->
+  <div id="checkoutSection" style="display:none;">
+    <button class="btn btn-primary btn-full btn-lg" onclick="checkout()" style="margin-bottom:8px;">
+      💳 ชำระเงิน
+    </button>
+    <p style="text-align:center;font-size:0.8rem;color:var(--text-muted);">รองรับ PromptPay · TrueMoney · บัตรเครดิต</p>
+  </div>
+
+  <div style="height:30px;"></div>
+</div>
+
+<script src="../../js/app.js"></script>
+<script>
+const tableId = Store.getTable();
+document.getElementById('tableVal').textContent = tableId;
+
+let discount = 0;
+const COUPONS = { 'BLEND50': 50, 'WELCOME20': 20, 'VIP100': 100 };
+
+function render() {
+  const cart = Store.getCart();
+  const cartListEl = document.getElementById('cartList');
+  const emptyEl = document.getElementById('emptyCart');
+  const summaryEl = document.getElementById('summaryCard');
+  const checkoutEl = document.getElementById('checkoutSection');
+  const couponEl = document.getElementById('couponSection');
+
+  if (cart.length === 0) {
+    emptyEl.style.display = 'block';
+    summaryEl.style.display = 'none';
+    checkoutEl.style.display = 'none';
+    couponEl.style.display = 'none';
+    cartListEl.innerHTML = '';
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  summaryEl.style.display = 'block';
+  checkoutEl.style.display = 'block';
+  couponEl.style.display = 'block';
+
+  cartListEl.innerHTML = '';
+  cart.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'cart-item animate-fadeInUp';
+    div.innerHTML = `
+      <div class="cart-item-emoji">${item.emoji}</div>
+      <div class="cart-item-info">
+        <div class="cart-item-name">${item.name}</div>
+        <div class="cart-item-opts">${item.summary || ''}</div>
+        <div class="cart-item-price">${Utils.formatPrice(item.price)} × ${item.qty} = ${Utils.formatPrice(item.price * item.qty)}</div>
+      </div>
+      <div class="cart-item-right">
+        <button class="remove-btn" onclick="removeItem('${item.cartId}')">🗑</button>
+        <div class="qty-control">
+          <button class="qty-btn" style="width:30px;height:30px;font-size:1rem;" onclick="changeQty('${item.cartId}', ${item.qty - 1})">−</button>
+          <span class="qty-value" style="min-width:30px;font-size:0.9rem;">${item.qty}</span>
+          <button class="qty-btn" style="width:30px;height:30px;font-size:1rem;" onclick="changeQty('${item.cartId}', ${item.qty + 1})">+</button>
+        </div>
+      </div>`;
+    cartListEl.appendChild(div);
+  });
+
+  const subtotal = Store.getTotal();
+  const total = Math.max(0, subtotal - discount);
+  document.getElementById('subtotalVal').textContent = Utils.formatPrice(subtotal);
+  document.getElementById('totalVal').textContent = Utils.formatPrice(total);
+
+  const discountRow = document.getElementById('discountRow');
+  if (discount > 0) {
+    discountRow.style.display = 'flex';
+    document.getElementById('discountVal').textContent = `-฿${discount}`;
+  } else { discountRow.style.display = 'none'; }
+}
+
+function removeItem(cartId) { Store.removeItem(cartId); render(); }
+function changeQty(cartId, qty) { Store.updateQty(cartId, qty); render(); }
+
+function applyCoupon() {
+  const code = document.getElementById('couponInput').value.trim().toUpperCase();
+  const msgEl = document.getElementById('couponMsg');
+  if (COUPONS[code]) {
+    discount = COUPONS[code];
+    msgEl.style.color = 'var(--success)';
+    msgEl.textContent = `✅ ใช้คูปอง ${code} ลด ฿${discount} สำเร็จ!`;
+    render();
+  } else {
+    msgEl.style.color = 'var(--danger)';
+    msgEl.textContent = '❌ รหัสคูปองไม่ถูกต้อง';
+  }
+}
+
+function checkout() {
+  const cart = Store.getCart();
+  if (cart.length === 0) return;
+  const subtotal = Store.getTotal();
+  const total = Math.max(0, subtotal - discount);
+  const order = {
+    id: Utils.generateOrderId(),
+    tableId,
+    items: cart,
+    subtotal,
+    discount,
+    total,
+    status: 'pending',
+    paymentStatus: 'pending',
+    createdAt: new Date().toISOString(),
+    queue: Utils.generateQueueNumber(),
+  };
+  Store.setOrder(order);
+  window.location.href = `payment.html`;
+}
+
+document.getElementById('clearBtn').onclick = () => {
+  if (Store.getCount() === 0) return;
+  if (confirm('ล้างตะกร้าทั้งหมด?')) { Store.clearCart(); render(); }
+};
+
+window.addEventListener('cartUpdate', render);
+render();
+</script>
+</body>
+</html>
