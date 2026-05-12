@@ -6,92 +6,45 @@
 <title>BlendBar — ติดตามออเดอร์</title>
 <link rel="stylesheet" href="../../css/styles.css">
 <style>
-.queue-card {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  border-radius: var(--radius-lg);
-  padding: 28px;
-  text-align: center;
-  margin-bottom: 20px;
-  position: relative;
-  overflow: hidden;
-}
-.queue-card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(45deg, transparent, transparent 20px, rgba(255,255,255,0.05) 20px, rgba(255,255,255,0.05) 21px);
-}
-.queue-number { font-size: 5rem; font-weight: 900; color: #0d0d1a; line-height: 1; }
-.queue-label { font-size: 0.9rem; font-weight: 700; color: rgba(13,13,26,0.7); margin-top: 4px; }
-.queue-sublabel { font-size: 0.78rem; color: rgba(13,13,26,0.5); margin-top: 2px; }
-
-.status-ready .queue-card {
-  background: linear-gradient(135deg, var(--secondary), #ea580c);
-  animation: pulse 1s infinite;
-}
-
-.eta-bar {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 20px;
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.eta-icon { font-size: 1.8rem; }
-.eta-text { font-size: 0.9rem; color: var(--text-muted); }
-.eta-time { font-size: 1.2rem; font-weight: 800; color: var(--primary); }
-
-.items-summary {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 20px;
-}
-.item-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.item-row:last-child { border-bottom: none; }
-
-.ready-banner {
-  display: none;
-  background: linear-gradient(135deg, rgba(251,146,60,0.15), rgba(244,114,182,0.15));
-  border: 1px solid var(--secondary);
-  border-radius: var(--radius);
-  padding: 20px;
-  text-align: center;
-  margin-bottom: 20px;
-  animation: bounceIn 0.5s ease;
-}
-.ready-banner.show { display: block; }
+.queue-card { background:linear-gradient(135deg,var(--primary),var(--primary-dark)); border-radius:var(--radius-lg); padding:28px; text-align:center; margin-bottom:20px; position:relative; overflow:hidden; }
+.queue-card::before { content:''; position:absolute; inset:0; background:repeating-linear-gradient(45deg,transparent,transparent 20px,rgba(255,255,255,0.05) 20px,rgba(255,255,255,0.05) 21px); }
+.queue-number { font-size:5rem; font-weight:900; color:#0d0d1a; line-height:1; }
+.queue-label { font-size:0.9rem; font-weight:700; color:rgba(13,13,26,0.7); margin-top:4px; }
+.queue-sublabel { font-size:0.78rem; color:rgba(13,13,26,0.5); margin-top:2px; }
+.eta-bar { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:20px; display:flex; align-items:center; gap:14px; }
+.eta-icon { font-size:1.8rem; }
+.eta-text { font-size:0.9rem; color:var(--text-muted); }
+.eta-time { font-size:1.2rem; font-weight:800; color:var(--primary); }
+.items-summary { background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:16px; margin-bottom:20px; }
+.item-row { display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); }
+.item-row:last-child { border-bottom:none; }
+.ready-banner { display:none; background:linear-gradient(135deg,rgba(251,146,60,0.15),rgba(244,114,182,0.15)); border:1px solid var(--secondary); border-radius:var(--radius); padding:20px; text-align:center; margin-bottom:20px; animation:bounceIn 0.5s ease; }
+.ready-banner.show { display:block; }
+.firebase-badge { display:inline-flex; align-items:center; gap:4px; font-size:0.7rem; color:var(--success); background:rgba(74,222,128,0.1); padding:2px 8px; border-radius:20px; margin-left:8px; }
 </style>
 </head>
 <body>
 <div class="topbar">
   <div class="topbar-inner">
     <a href="menu.html" class="btn btn-icon btn-ghost" style="font-size:1.3rem;">🏠</a>
-    <span class="topbar-title">📍 ติดตามออเดอร์</span>
+    <span class="topbar-title">📍 ติดตามออเดอร์ <span class="firebase-badge">🔥 Live</span></span>
     <div style="width:44px;"></div>
   </div>
 </div>
 
 <div class="container page-content">
-  <!-- Queue Card -->
   <div class="queue-card animate-fadeInUp" id="queueCard">
     <div class="queue-label">หมายเลขคิวของคุณ</div>
     <div class="queue-number" id="queueNum">–</div>
-    <div class="queue-sublabel" id="orderId">–</div>
+    <div class="queue-sublabel" id="orderIdEl">–</div>
   </div>
 
-  <!-- Ready Banner -->
   <div class="ready-banner" id="readyBanner">
     <div style="font-size:3rem;">🔔</div>
     <h2 style="font-size:1.4rem;font-weight:800;color:var(--secondary);margin-top:8px;">พร้อมรับแล้ว!</h2>
     <p style="color:var(--text-muted);margin-top:4px;">มารับที่เคาน์เตอร์ได้เลย 🥤</p>
   </div>
 
-  <!-- ETA -->
   <div class="eta-bar animate-fadeInUp delay-100" id="etaBar">
     <div class="eta-icon">⏱</div>
     <div>
@@ -100,13 +53,11 @@
     </div>
   </div>
 
-  <!-- Status Steps -->
   <div class="glass" style="padding:20px;margin-bottom:20px;">
     <div style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:16px;">สถานะออเดอร์</div>
     <div class="status-steps" id="statusSteps"></div>
   </div>
 
-  <!-- Items -->
   <div class="items-summary animate-fadeInUp delay-300">
     <div style="font-size:0.85rem;font-weight:700;color:var(--text-muted);margin-bottom:8px;">รายการที่สั่ง</div>
     <div id="itemsList"></div>
@@ -116,21 +67,25 @@
     </div>
   </div>
 
-  <!-- New Order Button -->
   <a href="menu.html" class="btn btn-ghost btn-full" style="margin-bottom:8px;">🛒 สั่งเพิ่ม</a>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="../../js/app.js"></script>
+<script src="../../js/firebase-config.js"></script>
 <script>
 const order = Store.getOrder();
-if (!order) { document.querySelector('.container').innerHTML = '<div class="empty-cart"><span class="empty-emoji">😔</span><h2>ไม่พบออเดอร์</h2><a href="menu.html" class="btn btn-primary" style="margin-top:20px;">กลับหน้าหลัก</a></div>'; }
+if (!order) {
+  document.querySelector('.container').innerHTML = '<div style="text-align:center;padding:80px 16px;"><div style="font-size:4rem;">😔</div><h2 style="margin-top:16px;">ไม่พบออเดอร์</h2><a href="menu.html" class="btn btn-primary" style="margin-top:20px;display:inline-flex;">กลับหน้าหลัก</a></div>';
+}
 
 if (order) {
   document.getElementById('queueNum').textContent = order.queue || '–';
-  document.getElementById('orderId').textContent = order.id;
+  document.getElementById('orderIdEl').textContent = order.id;
   document.getElementById('orderTotal').textContent = Utils.formatPrice(order.total || 0);
 
-  // Items list
+  // Render items
   const itemsEl = document.getElementById('itemsList');
   (order.items || []).forEach(item => {
     const div = document.createElement('div');
@@ -139,60 +94,47 @@ if (order) {
     itemsEl.appendChild(div);
   });
 
-  // Simulate status progression
-  const statusFlow = ['received', 'preparing', 'blending', 'ready'];
-  let statusIdx = 0;
-  const etaMap = { received: '~5 นาที', preparing: '~4 นาที', blending: '~2 นาที', ready: 'พร้อมรับ!' };
+  const etaMap = { received:'~5 นาที', preparing:'~4 นาที', blending:'~2 นาที', ready:'พร้อมรับ!' };
+  let lastStatus = null;
 
   function renderSteps(status) {
+    if (status === lastStatus) return;
+    lastStatus = status;
     const steps = Utils.getOrderStatusSteps(status);
-    const stepsEl = document.getElementById('statusSteps');
-    stepsEl.innerHTML = '';
+    const el = document.getElementById('statusSteps');
+    el.innerHTML = '';
     steps.forEach(step => {
       const div = document.createElement('div');
       div.className = `status-step ${step.state}`;
-      div.innerHTML = `
-        <div class="step-dot">${step.state === 'done' ? '✓' : step.emoji}</div>
-        <div class="step-content">
-          <div class="step-title" style="color:${step.state === 'active' ? 'var(--primary)' : step.state === 'done' ? 'var(--text-muted)' : 'var(--text-muted)'}">${step.label}</div>
-          ${step.state === 'active' ? '<div class="step-time" style="color:var(--primary);">● กำลังดำเนินการ...</div>' : ''}
-        </div>`;
-      stepsEl.appendChild(div);
+      div.innerHTML = `<div class="step-dot">${step.state==='done'?'✓':step.emoji}</div><div class="step-content"><div class="step-title" style="color:${step.state==='active'?'var(--primary)':'var(--text-muted)'}">${step.label}</div>${step.state==='active'?'<div class="step-time" style="color:var(--primary);">● กำลังดำเนินการ...</div>':''}</div>`;
+      el.appendChild(div);
     });
     document.getElementById('etaText').textContent = etaMap[status] || '~5 นาที';
-
     if (status === 'ready') {
       document.getElementById('readyBanner').classList.add('show');
       document.getElementById('etaBar').style.display = 'none';
-      // Play ready sound
       try {
         const ac = new AudioContext();
-        [523, 659, 784, 1047].forEach((f, i) => {
-          const osc = ac.createOscillator();
-          const g = ac.createGain();
-          osc.connect(g); g.connect(ac.destination);
-          osc.frequency.value = f;
-          g.gain.setValueAtTime(0.2, ac.currentTime + i * 0.18);
-          g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + i * 0.18 + 0.3);
-          osc.start(ac.currentTime + i * 0.18);
-          osc.stop(ac.currentTime + i * 0.18 + 0.3);
-        });
-      } catch(e) {}
+        [523,659,784,1047].forEach((f,i)=>{ const o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.frequency.value=f; g.gain.setValueAtTime(0.2,ac.currentTime+i*0.18); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+i*0.18+0.3); o.start(ac.currentTime+i*0.18);o.stop(ac.currentTime+i*0.18+0.3); });
+      } catch(e){}
     }
   }
 
-  renderSteps(statusFlow[0]);
-
-  // Auto-advance status every ~8s for demo
-  const intervals = [8000, 8000, 8000];
-  function advance() {
-    statusIdx++;
-    if (statusIdx < statusFlow.length) {
-      renderSteps(statusFlow[statusIdx]);
-      if (statusIdx < intervals.length) setTimeout(advance, intervals[statusIdx]);
-    }
+  // 🔥 Firebase real-time listener — status updates across all devices
+  try {
+    FirebaseDB.onOrder(order.id, (data) => {
+      renderSteps(data.status || 'received');
+      if (data.queue) document.getElementById('queueNum').textContent = data.queue;
+    });
+    console.log('🔥 Firebase connected — tracking order:', order.id);
+  } catch(e) {
+    console.warn('Firebase unavailable, fallback demo mode:', e);
+    const flow = ['received','preparing','blending','ready'];
+    let idx = 0;
+    renderSteps(flow[0]);
+    function adv(){ idx++; if(idx<flow.length){ renderSteps(flow[idx]); if(idx<3) setTimeout(adv,8000); } }
+    setTimeout(adv, 8000);
   }
-  setTimeout(advance, intervals[0]);
 }
 </script>
 </body>

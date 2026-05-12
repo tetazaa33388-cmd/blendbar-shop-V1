@@ -214,51 +214,22 @@ body { display: flex; }
   </div>
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="../../js/app.js"></script>
+<script src="../../js/firebase-config.js"></script>
 <script>
 // Live clock
-function updateClock() {
-  const now = new Date();
-  document.getElementById('liveTime').textContent = now.toLocaleTimeString('th-TH');
-}
+function updateClock() { document.getElementById('liveTime').textContent = new Date().toLocaleTimeString('th-TH'); }
 setInterval(updateClock, 1000); updateClock();
 
-// Load orders from localStorage
-function getAdminOrders() {
-  try { return JSON.parse(localStorage.getItem('admin_orders') || '[]'); } catch { return []; }
-}
+let dashOrders = [];
 
-// Seed demo data if empty
-function seedDemoOrders() {
-  const existing = getAdminOrders();
-  if (existing.length > 0) return;
-  const demoItems = [
-    [{ emoji:'🥭', name:'Mango Magic', qty:2, price:89 }],
-    [{ emoji:'🍓', name:'Strawberry Blast', qty:1, price:85 }, { emoji:'🍫', name:'Chocolate Protein', qty:1, price:119 }],
-    [{ emoji:'☕', name:'Cold Brew Blend', qty:3, price:99 }],
-    [{ emoji:'🫐', name:'Mixed Berry', qty:1, price:95 }],
-    [{ emoji:'🍌', name:'Banana Protein', qty:2, price:109 }],
-  ];
-  const tables = ['T1','T2','T3','T4','T5','T6','T7','T8'];
-  const statuses = ['received','preparing','blending','ready'];
-  const demos = demoItems.map((items, i) => ({
-    id: 'ORD-DEMO' + (i+1),
-    tableId: tables[i % tables.length],
-    items, status: statuses[i % statuses.length],
-    paymentStatus: 'paid',
-    total: items.reduce((s, it) => s + it.price * it.qty, 0),
-    queue: 10 + i,
-    createdAt: new Date(Date.now() - (5-i)*8*60000).toISOString(),
-  }));
-  localStorage.setItem('admin_orders', JSON.stringify(demos));
-}
-seedDemoOrders();
-
-function renderDashboard() {
-  const orders = getAdminOrders();
-  const totalRevenue = orders.reduce((s, o) => s + (o.total || 0), 0);
-  const totalItems = orders.reduce((s, o) => s + (o.items || []).reduce((ss, i) => ss + i.qty, 0), 0);
-  const uniqueTables = new Set(orders.map(o => o.tableId)).size;
+function renderDashboard(orders) {
+  dashOrders = orders;
+  const totalRevenue = orders.reduce((s,o)=>s+(o.total||0),0);
+  const totalItems = orders.reduce((s,o)=>s+(o.items||[]).reduce((ss,i)=>ss+i.qty,0),0);
+  const uniqueTables = new Set(orders.map(o=>o.tableId)).size;
 
   document.getElementById('statRevenue').textContent = Utils.formatPrice(totalRevenue);
   document.getElementById('statRevenueChange').textContent = `+฿${Math.round(totalRevenue*0.12)} จากเมื่อวาน`;
@@ -269,81 +240,76 @@ function renderDashboard() {
 
   // Bar chart - 7 days
   const days = ['จ','อ','พ','พฤ','ศ','ส','อา'];
-  const barData = [3200, 4100, 2800, 5500, 4800, 6200, totalRevenue];
-  const maxVal = Math.max(...barData);
+  const barData = [3200,4100,2800,5500,4800,6200,totalRevenue];
+  const maxVal = Math.max(...barData, 1);
   const barEl = document.getElementById('barChart');
   barEl.innerHTML = '';
-  barData.forEach((val, i) => {
-    const pct = (val / maxVal) * 100;
+  barData.forEach((val,i)=>{
+    const pct = (val/maxVal)*100;
     const col = document.createElement('div');
-    col.className = 'bar-col';
-    col.innerHTML = `<span class="bar-val">฿${(val/1000).toFixed(1)}k</span><div class="bar-fill" style="height:${pct}%;${i===6?'background:linear-gradient(to top,var(--secondary),var(--accent));':''}" ></div><span class="bar-label">${days[i]}</span>`;
+    col.className='bar-col';
+    col.innerHTML=`<span class="bar-val">฿${(val/1000).toFixed(1)}k</span><div class="bar-fill" style="height:${pct}%;${i===6?'background:linear-gradient(to top,var(--secondary),var(--accent));':''}" ></div><span class="bar-label">${days[i]}</span>`;
     barEl.appendChild(col);
   });
 
   // Top menus
   const menuCount = {};
-  orders.forEach(o => (o.items||[]).forEach(it => { menuCount[it.name] = (menuCount[it.name]||0) + it.qty; }));
+  orders.forEach(o=>(o.items||[]).forEach(it=>{menuCount[it.name]=(menuCount[it.name]||0)+it.qty;}));
   const topMenus = Object.entries(menuCount).sort((a,b)=>b[1]-a[1]).slice(0,5);
   const tmEl = document.getElementById('topMenus');
-  tmEl.innerHTML = '';
-  if (topMenus.length === 0) {
-    tmEl.innerHTML = '<p style="color:var(--text-muted);font-size:0.85rem;">ยังไม่มีข้อมูล</p>';
-  }
-  topMenus.forEach(([name, cnt], i) => {
-    const menuItem = MENU_DATA.find(m => m.name === name);
-    const pct = Math.round((cnt / Math.max(...topMenus.map(m=>m[1]))) * 100);
-    const div = document.createElement('div');
-    div.className = 'top-menu-row';
-    div.innerHTML = `
-      <span class="rank">#${i+1}</span>
-      <span style="font-size:1.2rem;">${menuItem?.emoji||'🥤'}</span>
-      <div style="flex:1;">
-        <div style="font-weight:600;font-size:0.85rem;">${name}</div>
-        <div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </div>
-      <span style="color:var(--primary);font-weight:700;font-size:0.85rem;">${cnt} แก้ว</span>`;
+  tmEl.innerHTML='';
+  if(topMenus.length===0){tmEl.innerHTML='<p style="color:var(--text-muted);font-size:0.85rem;">ยังไม่มีข้อมูล</p>';}
+  topMenus.forEach(([name,cnt],i)=>{
+    const menuItem=MENU_DATA.find(m=>m.name===name);
+    const pct=Math.round((cnt/Math.max(...topMenus.map(m=>m[1])))*100);
+    const div=document.createElement('div');
+    div.className='top-menu-row';
+    div.innerHTML=`<span class="rank">#${i+1}</span><span style="font-size:1.2rem;">${menuItem?.emoji||'🥤'}</span><div style="flex:1;"><div style="font-weight:600;font-size:0.85rem;">${name}</div><div class="progress-bar" style="margin-top:4px;"><div class="progress-fill" style="width:${pct}%"></div></div></div><span style="color:var(--primary);font-weight:700;font-size:0.85rem;">${cnt} แก้ว</span>`;
     tmEl.appendChild(div);
   });
 
   // Recent orders
   const roEl = document.getElementById('recentOrders');
-  roEl.innerHTML = '';
-  orders.slice(0,6).forEach(ord => {
-    const statusColors = { received:'var(--primary)', preparing:'var(--secondary)', blending:'var(--accent)', ready:'var(--success)' };
-    const statusLabels = { received:'รับแล้ว', preparing:'เตรียม', blending:'ปั่น', ready:'พร้อม' };
-    const div = document.createElement('div');
-    div.className = 'order-row';
-    div.innerHTML = `
-      <span class="order-table-badge">${ord.tableId}</span>
-      <div style="flex:1;"><div style="font-weight:600;">${(ord.items||[]).map(i=>i.name).join(', ').substring(0,30)}${(ord.items||[]).map(i=>i.name).join(', ').length>30?'...':''}</div><div style="font-size:0.72rem;color:var(--text-muted);">${new Date(ord.createdAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'})}</div></div>
-      <span style="color:${statusColors[ord.status]||'var(--text-muted)'};font-weight:700;font-size:0.78rem;">${statusLabels[ord.status]||ord.status}</span>
-      <span style="color:var(--primary);font-weight:700;">${Utils.formatPrice(ord.total)}</span>`;
+  roEl.innerHTML='';
+  orders.slice(0,6).forEach(ord=>{
+    const sColors={received:'var(--primary)',preparing:'var(--secondary)',blending:'var(--accent)',ready:'var(--success)'};
+    const sLabels={received:'รับแล้ว',preparing:'เตรียม',blending:'ปั่น',ready:'พร้อม'};
+    const div=document.createElement('div');
+    div.className='order-row';
+    div.innerHTML=`<span class="order-table-badge">${ord.tableId}</span><div style="flex:1;"><div style="font-weight:600;">${(ord.items||[]).map(i=>i.name).join(', ').substring(0,30)}${(ord.items||[]).map(i=>i.name).join(', ').length>30?'...':''}</div><div style="font-size:0.72rem;color:var(--text-muted);">${ord.createdAt?new Date(ord.createdAt).toLocaleTimeString('th-TH',{hour:'2-digit',minute:'2-digit'}):''}</div></div><span style="color:${sColors[ord.status]||'var(--text-muted)'};font-weight:700;font-size:0.78rem;">${sLabels[ord.status]||ord.status}</span><span style="color:var(--primary);font-weight:700;">${Utils.formatPrice(ord.total)}</span>`;
     roEl.appendChild(div);
   });
 
   // Tables grid
   const tablesEl = document.getElementById('tablesGrid');
-  tablesEl.innerHTML = '';
+  tablesEl.innerHTML='';
   const occupiedTables = new Set(orders.filter(o=>o.status!=='ready').map(o=>o.tableId));
   const busyTables = new Set(orders.filter(o=>o.status==='blending'||o.status==='preparing').map(o=>o.tableId));
-  for (let i = 1; i <= 20; i++) {
-    const tId = `T${i}`;
-    const cell = document.createElement('div');
-    cell.className = 'table-cell' + (busyTables.has(tId) ? ' busy' : occupiedTables.has(tId) ? ' occupied' : '');
-    cell.innerHTML = `<span style="font-size:0.9rem;">🪑</span><span>${tId}</span>`;
+  for(let i=1;i<=20;i++){
+    const tId=`T${i}`;
+    const cell=document.createElement('div');
+    cell.className='table-cell'+(busyTables.has(tId)?' busy':occupiedTables.has(tId)?' occupied':'');
+    cell.innerHTML=`<span style="font-size:0.9rem;">🪑</span><span>${tId}</span>`;
     tablesEl.appendChild(cell);
   }
 
-  // New order badge
   const pendingCount = orders.filter(o=>o.status==='received').length;
   const badge = document.getElementById('newOrderBadge');
-  if (pendingCount > 0) { badge.textContent = pendingCount; badge.style.display = 'inline'; }
-  else badge.style.display = 'none';
+  if(pendingCount>0){badge.textContent=pendingCount;badge.style.display='inline';}else badge.style.display='none';
 }
 
-renderDashboard();
-setInterval(renderDashboard, 5000);
+// 🔥 Firebase real-time listener with localStorage fallback
+try {
+  FirebaseDB.onAllOrders((orders) => {
+    renderDashboard(orders);
+  });
+  console.log('🔥 Dashboard connected to Firebase');
+} catch(e) {
+  console.warn('Firebase unavailable, using localStorage:', e);
+  function getLocalOrders(){ try{return JSON.parse(localStorage.getItem('admin_orders')||'[]');}catch{return[];} }
+  renderDashboard(getLocalOrders());
+  setInterval(()=>renderDashboard(getLocalOrders()), 5000);
+}
 </script>
 </body>
 </html>

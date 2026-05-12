@@ -6,79 +6,48 @@
 <title>BlendBar Admin — จัดการออเดอร์</title>
 <link rel="stylesheet" href="../../css/styles.css">
 <style>
-body { display: flex; }
-.sidebar { width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100; }
-.sidebar-logo { padding:24px 20px 20px;border-bottom:1px solid var(--border); }
-.sidebar-logo-text { font-size:1.3rem;font-weight:900; }
-.sidebar-sub { font-size:0.72rem;color:var(--text-muted);margin-top:2px; }
-.sidebar-nav { padding:12px 8px;flex:1; }
-.nav-item { display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-sm);color:var(--text-muted);text-decoration:none;font-size:0.9rem;font-weight:500;transition:all var(--transition);margin-bottom:2px; }
-.nav-item:hover,.nav-item.active { background:rgba(163,230,53,0.12);color:var(--primary); }
-.nav-item.active { font-weight:700; }
-.nav-icon { font-size:1.15rem; }
-.sidebar-footer { padding:16px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-muted); }
-.main { margin-left:220px;flex:1;min-height:100vh; }
-.admin-topbar { padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(13,13,26,0.8);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50; }
-.content { padding:24px 28px; }
+body{display:flex;}
+.sidebar{width:220px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;left:0;top:0;z-index:100;}
+.sidebar-logo{padding:24px 20px 20px;border-bottom:1px solid var(--border);}
+.sidebar-logo-text{font-size:1.3rem;font-weight:900;}
+.sidebar-sub{font-size:0.72rem;color:var(--text-muted);margin-top:2px;}
+.sidebar-nav{padding:12px 8px;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:var(--radius-sm);color:var(--text-muted);text-decoration:none;font-size:0.9rem;font-weight:500;transition:all var(--transition);margin-bottom:2px;}
+.nav-item:hover,.nav-item.active{background:rgba(163,230,53,0.12);color:var(--primary);}
+.nav-item.active{font-weight:700;}
+.nav-icon{font-size:1.15rem;}
+.sidebar-footer{padding:16px;border-top:1px solid var(--border);font-size:0.78rem;color:var(--text-muted);}
+.main{margin-left:220px;flex:1;min-height:100vh;}
+.admin-topbar{padding:16px 28px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:rgba(13,13,26,0.8);backdrop-filter:blur(12px);position:sticky;top:0;z-index:50;}
+.content{padding:24px 28px;}
 
-.filter-tabs { display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap; }
-.filter-tab { padding:8px 16px;border-radius:30px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all var(--transition); }
-.filter-tab:hover,.filter-tab.active { background:var(--primary);color:#0d0d1a;border-color:var(--primary); }
-
-.orders-grid { display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px; }
-
-.order-card {
-  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;
-  transition:all var(--transition);position:relative;overflow:hidden;
-}
-.order-card.status-received { border-left:4px solid var(--primary); }
-.order-card.status-preparing { border-left:4px solid var(--secondary); }
-.order-card.status-blending { border-left:4px solid var(--accent); }
-.order-card.status-ready { border-left:4px solid var(--success); opacity:0.7; }
-.order-card.new-anim { animation:bounceIn 0.5s ease; }
-
-.order-card-header { display:flex;align-items:center;justify-content:space-between;margin-bottom:12px; }
-.order-table-tag { font-size:1.1rem;font-weight:800;color:var(--primary);background:rgba(163,230,53,0.1);padding:4px 12px;border-radius:20px; }
-.order-time { font-size:0.75rem;color:var(--text-muted); }
-.order-id-text { font-size:0.72rem;color:var(--text-muted);margin-bottom:8px; }
-
-.order-items-list { margin-bottom:12px; }
-.order-item-line { display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border); }
-.order-item-line:last-child { border-bottom:none; }
-.order-item-emoji { font-size:1.3rem;flex-shrink:0; }
-.order-item-detail { flex:1; }
-.order-item-name { font-size:0.9rem;font-weight:600; }
-.order-item-opts { font-size:0.72rem;color:var(--text-muted); }
-.order-item-qty { font-size:0.8rem;color:var(--text-muted); }
-
-.order-footer { display:flex;align-items:center;justify-content:space-between;margin-top:12px; }
-.order-total-text { font-size:1rem;font-weight:800;color:var(--primary); }
-
-.status-btn-group { display:flex;gap:8px;margin-top:10px; }
-.status-btn {
-  flex:1;padding:9px 12px;border-radius:var(--radius-sm);border:none;font-family:'Outfit',sans-serif;
-  font-size:0.8rem;font-weight:700;cursor:pointer;transition:all var(--transition);
-}
-.status-btn:hover { filter:brightness(1.1);transform:translateY(-1px); }
-.btn-accept { background:rgba(163,230,53,0.15);color:var(--primary);border:1px solid var(--primary); }
-.btn-prepare { background:rgba(251,146,60,0.15);color:var(--secondary);border:1px solid var(--secondary); }
-.btn-done { background:rgba(74,222,128,0.15);color:var(--success);border:1px solid var(--success); }
-
-.empty-orders { grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-muted); }
-
-.notification-bell {
-  position:relative;cursor:pointer;font-size:1.4rem;padding:4px 8px;
-}
-.notif-count {
-  position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;
-  font-size:0.6rem;font-weight:700;width:16px;height:16px;border-radius:50%;
-  display:flex;align-items:center;justify-content:center;
-}
-
-.live-indicator { display:flex;align-items:center;gap:6px;font-size:0.8rem;color:var(--text-muted); }
-.live-dot { width:8px;height:8px;border-radius:50%;background:var(--danger);animation:pulse 1.5s infinite; }
-
-@media(max-width:900px) { .sidebar{display:none;} .main{margin-left:0;} .content{padding:16px;} }
+.filter-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;}
+.filter-tab{padding:8px 16px;border-radius:30px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all var(--transition);}
+.filter-tab:hover,.filter-tab.active{background:var(--primary);color:#0d0d1a;border-color:var(--primary);}
+.orders-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+.order-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;transition:all var(--transition);position:relative;}
+.order-card.status-received{border-left:4px solid var(--primary);}
+.order-card.status-preparing{border-left:4px solid var(--secondary);}
+.order-card.status-blending{border-left:4px solid var(--accent);}
+.order-card.status-ready{border-left:4px solid var(--success);opacity:0.7;}
+.order-card.new-anim{animation:bounceIn 0.5s ease;}
+.order-card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.order-table-tag{font-size:1.1rem;font-weight:800;color:var(--primary);background:rgba(163,230,53,0.1);padding:4px 12px;border-radius:20px;}
+.order-time{font-size:0.75rem;color:var(--text-muted);}
+.order-item-line{display:flex;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);}
+.order-item-line:last-child{border-bottom:none;}
+.status-btn-group{display:flex;gap:8px;margin-top:10px;}
+.status-btn{flex:1;padding:9px 12px;border-radius:var(--radius-sm);border:none;font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:700;cursor:pointer;transition:all var(--transition);}
+.status-btn:hover{filter:brightness(1.1);transform:translateY(-1px);}
+.btn-accept{background:rgba(163,230,53,0.15);color:var(--primary);border:1px solid var(--primary);}
+.btn-prepare{background:rgba(251,146,60,0.15);color:var(--secondary);border:1px solid var(--secondary);}
+.btn-done{background:rgba(74,222,128,0.15);color:var(--success);border:1px solid var(--success);}
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--danger);animation:pulse 1.5s infinite;display:inline-block;margin-right:6px;}
+.notif-count{position:absolute;top:-2px;right:-2px;background:var(--danger);color:white;font-size:0.6rem;font-weight:700;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.firebase-status{font-size:0.75rem;padding:3px 10px;border-radius:20px;font-weight:600;}
+.firebase-on{background:rgba(74,222,128,0.1);color:var(--success);}
+.firebase-off{background:rgba(248,113,113,0.1);color:var(--danger);}
+@media(max-width:900px){.sidebar{display:none;}.main{margin-left:0;}.content{padding:16px;}}
 </style>
 </head>
 <body>
@@ -94,7 +63,6 @@ body { display: flex; }
     <a href="#" class="nav-item"><span class="nav-icon">📦</span> สต็อกวัตถุดิบ</a>
     <a href="#" class="nav-item"><span class="nav-icon">🎁</span> โปรโมชั่น</a>
     <a href="#" class="nav-item"><span class="nav-icon">👥</span> สมาชิก</a>
-    <a href="#" class="nav-item"><span class="nav-icon">📈</span> รายงาน</a>
   </nav>
   <div class="sidebar-footer">
     <div style="font-weight:600;color:var(--text);">Admin User</div>
@@ -107,17 +75,19 @@ body { display: flex; }
   <div class="admin-topbar">
     <div style="display:flex;align-items:center;gap:12px;">
       <span style="font-size:1.2rem;font-weight:800;">📋 จัดการออเดอร์</span>
-      <span class="live-indicator"><span class="live-dot"></span>Auto-refresh ทุก 5 วิ</span>
+      <span id="firebaseStatus" class="firebase-status firebase-off">⏳ กำลังเชื่อมต่อ...</span>
     </div>
     <div style="display:flex;align-items:center;gap:16px;">
       <span id="liveTime" style="font-size:0.8rem;color:var(--text-muted);"></span>
-      <span class="notification-bell" id="notifBell" title="ออเดอร์ใหม่">🔔<span class="notif-count" id="notifCount" style="display:none;"></span></span>
+      <div style="position:relative;">
+        <span style="font-size:1.4rem;cursor:pointer;" title="ออเดอร์ใหม่">🔔</span>
+        <span class="notif-count" id="notifCount" style="display:none;"></span>
+      </div>
       <button class="btn btn-sm btn-ghost" onclick="addDemoOrder()">➕ ทดสอบออเดอร์</button>
     </div>
   </div>
 
   <div class="content">
-    <!-- Filter Tabs -->
     <div class="filter-tabs">
       <button class="filter-tab active" onclick="setFilter('all',this)">ทั้งหมด <span id="cntAll" class="badge badge-primary" style="margin-left:4px;"></span></button>
       <button class="filter-tab" onclick="setFilter('received',this)">🟢 รับแล้ว <span id="cntReceived" class="badge badge-primary" style="margin-left:4px;"></span></button>
@@ -125,20 +95,24 @@ body { display: flex; }
       <button class="filter-tab" onclick="setFilter('blending',this)">🟣 ปั่น <span id="cntBlending" class="badge badge-accent" style="margin-left:4px;"></span></button>
       <button class="filter-tab" onclick="setFilter('ready',this)">✅ พร้อม <span id="cntReady" class="badge badge-success" style="margin-left:4px;"></span></button>
     </div>
-
-    <div class="orders-grid" id="ordersGrid"></div>
+    <div class="orders-grid" id="ordersGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted);">⏳ กำลังโหลดออเดอร์จาก Firebase...</div>
+    </div>
   </div>
 </main>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="../../js/app.js"></script>
+<script src="../../js/firebase-config.js"></script>
 <script>
 let currentFilter = 'all';
-let knownOrderIds = new Set();
+let allOrders = [];
+let knownIds = new Set();
+let unsubscribe = null;
 
-function getOrders() {
-  try { return JSON.parse(localStorage.getItem('admin_orders') || '[]'); } catch { return []; }
-}
-function saveOrders(orders) { localStorage.setItem('admin_orders', JSON.stringify(orders)); }
+// Live clock
+setInterval(() => { document.getElementById('liveTime').textContent = new Date().toLocaleTimeString('th-TH'); }, 1000);
 
 function setFilter(f, el) {
   currentFilter = f;
@@ -147,100 +121,79 @@ function setFilter(f, el) {
   renderOrders();
 }
 
-function updateStatus(orderId, newStatus) {
-  const orders = getOrders();
-  const order = orders.find(o => o.id === orderId);
-  if (order) { order.status = newStatus; saveOrders(orders); renderOrders(); }
-}
-
 function timeAgo(iso) {
+  if (!iso) return '';
   const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
   if (diff < 60) return `${diff} วิที่แล้ว`;
   if (diff < 3600) return `${Math.floor(diff/60)} นาทีที่แล้ว`;
   return `${Math.floor(diff/3600)} ชม.ที่แล้ว`;
 }
 
+async function updateStatus(orderId, newStatus) {
+  try {
+    await FirebaseDB.updateStatus(orderId, newStatus);
+  } catch(e) {
+    // Fallback localStorage
+    const orders = JSON.parse(localStorage.getItem('admin_orders')||'[]');
+    const o = orders.find(x=>x.id===orderId);
+    if(o) { o.status=newStatus; localStorage.setItem('admin_orders',JSON.stringify(orders)); }
+    allOrders = allOrders.map(o => o.id===orderId ? {...o,status:newStatus} : o);
+    renderOrders();
+  }
+}
+
+async function deleteOrder(id) {
+  if (!confirm('ลบออเดอร์นี้?')) return;
+  try {
+    await FirebaseDB.deleteOrder(id);
+  } catch(e) {
+    allOrders = allOrders.filter(o=>o.id!==id);
+    renderOrders();
+  }
+}
+
 function renderOrders() {
-  const orders = getOrders();
-  const filtered = currentFilter === 'all' ? orders : orders.filter(o => o.status === currentFilter);
+  const filtered = currentFilter==='all' ? allOrders : allOrders.filter(o=>o.status===currentFilter);
 
-  // Update counts
-  document.getElementById('cntAll').textContent = orders.length;
-  document.getElementById('cntReceived').textContent = orders.filter(o=>o.status==='received').length;
-  document.getElementById('cntPreparing').textContent = orders.filter(o=>o.status==='preparing').length;
-  document.getElementById('cntBlending').textContent = orders.filter(o=>o.status==='blending').length;
-  document.getElementById('cntReady').textContent = orders.filter(o=>o.status==='ready').length;
+  document.getElementById('cntAll').textContent = allOrders.length;
+  document.getElementById('cntReceived').textContent = allOrders.filter(o=>o.status==='received').length;
+  document.getElementById('cntPreparing').textContent = allOrders.filter(o=>o.status==='preparing').length;
+  document.getElementById('cntBlending').textContent = allOrders.filter(o=>o.status==='blending').length;
+  document.getElementById('cntReady').textContent = allOrders.filter(o=>o.status==='ready').length;
 
-  // Notification badge
-  const newCount = orders.filter(o=>o.status==='received').length;
   const nb = document.getElementById('notifCount');
-  if (newCount > 0) { nb.textContent = newCount; nb.style.display = 'flex'; } else nb.style.display = 'none';
+  const newCount = allOrders.filter(o=>o.status==='received').length;
+  if(newCount>0){nb.textContent=newCount;nb.style.display='flex';}else nb.style.display='none';
 
   const grid = document.getElementById('ordersGrid');
-
-  if (filtered.length === 0) {
-    grid.innerHTML = '<div class="empty-orders"><div style="font-size:4rem;">📭</div><h3 style="margin-top:16px;">ไม่มีออเดอร์</h3><p style="margin-top:8px;">ยังไม่มีออเดอร์ในสถานะนี้</p></div>';
+  if (filtered.length===0) {
+    grid.innerHTML='<div style="grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--text-muted);"><div style="font-size:4rem;">📭</div><h3 style="margin-top:16px;">ไม่มีออเดอร์</h3></div>';
     return;
   }
 
-  // Build cards
-  const nextStatusMap = { received: 'preparing', preparing: 'blending', blending: 'ready' };
-  const nextLabelMap = { received: '▶ เริ่มเตรียม', preparing: '⚡ เริ่มปั่น', blending: '✅ เสร็จแล้ว' };
-  const statusLabel = { received:'🟢 รับแล้ว', preparing:'🟠 กำลังเตรียม', blending:'🟣 กำลังปั่น', ready:'✅ พร้อมรับ' };
-  const statusColor = { received:'var(--primary)', preparing:'var(--secondary)', blending:'var(--accent)', ready:'var(--success)' };
+  const nextMap={received:'preparing',preparing:'blending',blending:'ready'};
+  const nextLabel={received:'▶ เริ่มเตรียม',preparing:'⚡ เริ่มปั่น',blending:'✅ เสร็จแล้ว'};
+  const statusLabel={received:'🟢 รับแล้ว',preparing:'🟠 กำลังเตรียม',blending:'🟣 กำลังปั่น',ready:'✅ พร้อมรับ'};
+  const statusColor={received:'var(--primary)',preparing:'var(--secondary)',blending:'var(--accent)',ready:'var(--success)'};
 
-  // Check new orders
-  let hasNew = false;
-  const newIds = new Set(orders.map(o=>o.id));
-  newIds.forEach(id => { if (!knownOrderIds.has(id)) hasNew = true; });
-
-  if (hasNew && knownOrderIds.size > 0) {
-    try {
-      const ac = new AudioContext();
-      const osc = ac.createOscillator();
-      const g = ac.createGain();
-      osc.connect(g); g.connect(ac.destination);
-      osc.frequency.value = 880;
-      g.gain.setValueAtTime(0.3, ac.currentTime);
-      g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.3);
-      osc.start(); osc.stop(ac.currentTime + 0.3);
-    } catch(e) {}
-  }
-  knownOrderIds = newIds;
-
-  grid.innerHTML = '';
-  filtered.forEach((ord, idx) => {
+  grid.innerHTML='';
+  filtered.forEach(ord => {
     const card = document.createElement('div');
     card.className = `order-card status-${ord.status}`;
-    if (idx === 0 && hasNew) card.classList.add('new-anim');
-
-    const nextStatus = nextStatusMap[ord.status];
-    const actionBtn = nextStatus
-      ? `<button class="status-btn btn-${nextStatus === 'preparing' ? 'accept' : nextStatus === 'blending' ? 'prepare' : 'done'}" onclick="updateStatus('${ord.id}','${nextStatus}')">${nextLabelMap[ord.status]}</button>`
-      : '';
-
-    card.innerHTML = `
+    const next = nextMap[ord.status];
+    const actionBtn = next ? `<button class="status-btn btn-${next==='preparing'?'accept':next==='blending'?'prepare':'done'}" onclick="updateStatus('${ord.id}','${next}')">${nextLabel[ord.status]}</button>` : '';
+    card.innerHTML=`
       <div class="order-card-header">
         <span class="order-table-tag">${ord.tableId}</span>
         <div style="text-align:right;">
-          <div style="font-size:0.72rem;font-weight:700;color:${statusColor[ord.status]||'var(--text-muted)'};">${statusLabel[ord.status]||ord.status}</div>
+          <div style="font-size:0.72rem;font-weight:700;color:${statusColor[ord.status]};">${statusLabel[ord.status]||ord.status}</div>
           <div class="order-time">${timeAgo(ord.createdAt)}</div>
         </div>
       </div>
-      <div class="order-id-text">${ord.id} · คิว #${ord.queue}</div>
-      <div class="order-items-list">
-        ${(ord.items||[]).map(it => `
-          <div class="order-item-line">
-            <span class="order-item-emoji">${it.emoji}</span>
-            <div class="order-item-detail">
-              <div class="order-item-name">${it.name}</div>
-              ${it.summary ? `<div class="order-item-opts">${it.summary}</div>` : ''}
-            </div>
-            <span class="order-item-qty">×${it.qty}</span>
-          </div>`).join('')}
-      </div>
-      <div class="order-footer">
-        <span class="order-total-text">${Utils.formatPrice(ord.total)}</span>
+      <div style="font-size:0.72rem;color:var(--text-muted);margin-bottom:8px;">${ord.id} · คิว #${ord.queue}</div>
+      <div>${(ord.items||[]).map(it=>`<div class="order-item-line"><span style="font-size:1.3rem;">${it.emoji}</span><div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">${it.name}</div>${it.summary?`<div style="font-size:0.72rem;color:var(--text-muted);">${it.summary}</div>`:''}</div><span style="font-size:0.8rem;color:var(--text-muted);">×${it.qty}</span></div>`).join('')}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:12px;">
+        <span style="font-size:1rem;font-weight:800;color:var(--primary);">${Utils.formatPrice(ord.total)}</span>
         <span class="badge badge-success">💳 ชำระแล้ว</span>
       </div>
       <div class="status-btn-group">
@@ -251,41 +204,61 @@ function renderOrders() {
   });
 }
 
-function deleteOrder(id) {
-  if (!confirm('ลบออเดอร์นี้?')) return;
-  const orders = getOrders().filter(o => o.id !== id);
-  saveOrders(orders);
-  renderOrders();
+// 🔥 Firebase real-time listener
+function startFirebaseListener() {
+  const statusEl = document.getElementById('firebaseStatus');
+  try {
+    unsubscribe = FirebaseDB.onAllOrders((orders) => {
+      // Detect new orders for notification sound
+      const newIds = new Set(orders.map(o=>o.id));
+      let hasNew = false;
+      newIds.forEach(id => { if(!knownIds.has(id)) hasNew=true; });
+      if (hasNew && knownIds.size>0) {
+        try { const ac=new AudioContext(),o=ac.createOscillator(),g=ac.createGain(); o.connect(g);g.connect(ac.destination); o.frequency.value=880; g.gain.setValueAtTime(0.3,ac.currentTime); g.gain.exponentialRampToValueAtTime(0.001,ac.currentTime+0.4); o.start();o.stop(ac.currentTime+0.4); } catch(e){}
+        Utils.showToast('ออเดอร์ใหม่เข้ามา! 🔔','🛎');
+      }
+      knownIds = newIds;
+      allOrders = orders;
+      renderOrders();
+      statusEl.className='firebase-status firebase-on';
+      statusEl.textContent='🔥 Firebase Live';
+    });
+  } catch(e) {
+    console.warn('Firebase unavailable, using localStorage:', e);
+    statusEl.className='firebase-status firebase-off';
+    statusEl.textContent='⚠️ ออฟไลน์';
+    // Fallback to localStorage
+    allOrders = JSON.parse(localStorage.getItem('admin_orders')||'[]');
+    renderOrders();
+    setInterval(()=>{
+      allOrders = JSON.parse(localStorage.getItem('admin_orders')||'[]');
+      renderOrders();
+    }, 3000);
+  }
 }
 
+// Demo order injector
 let demoCounter = 10;
-function addDemoOrder() {
+async function addDemoOrder() {
   demoCounter++;
-  const randomMenus = MENU_DATA.sort(() => Math.random()-0.5).slice(0,Math.floor(Math.random()*3)+1);
-  const items = randomMenus.map(m => ({ emoji:m.emoji, name:m.name, qty:Math.floor(Math.random()*2)+1, price:m.price, summary:`M · หวาน 75% · ปกติ` }));
-  const total = items.reduce((s,i)=>s+i.price*i.qty, 0);
+  const randomMenus = MENU_DATA.sort(()=>Math.random()-0.5).slice(0,Math.floor(Math.random()*3)+1);
+  const items = randomMenus.map(m=>({emoji:m.emoji,name:m.name,qty:Math.floor(Math.random()*2)+1,price:m.price,summary:'M · หวาน 75% · ปกติ'}));
   const order = {
-    id: Utils.generateOrderId(),
-    tableId: `T${Math.floor(Math.random()*12)+1}`,
-    items, total, status:'received',
-    paymentStatus:'paid',
-    queue: 10+demoCounter,
-    createdAt: new Date().toISOString(),
+    id:Utils.generateOrderId(), tableId:`T${Math.floor(Math.random()*12)+1}`,
+    items, total:items.reduce((s,i)=>s+i.price*i.qty,0),
+    status:'received', paymentStatus:'paid',
+    queue:10+demoCounter, createdAt:new Date().toISOString(),
   };
-  const orders = getOrders();
-  orders.unshift(order);
-  saveOrders(orders);
-  renderOrders();
-  Utils.showToast('ออเดอร์ใหม่เข้ามา! 🔔','🛎');
+  try { await FirebaseDB.saveOrder(order); }
+  catch(e) {
+    const orders=JSON.parse(localStorage.getItem('admin_orders')||'[]');
+    orders.unshift(order); localStorage.setItem('admin_orders',JSON.stringify(orders));
+    allOrders=[order,...allOrders]; renderOrders();
+  }
+  Utils.showToast('เพิ่มออเดอร์ทดสอบแล้ว!','🧪');
 }
 
-// Live clock
-function updateClock() { document.getElementById('liveTime').textContent = new Date().toLocaleTimeString('th-TH'); }
-setInterval(updateClock, 1000); updateClock();
-
-// Auto-refresh
-renderOrders();
-setInterval(renderOrders, 5000);
+startFirebaseListener();
 </script>
 </body>
 </html>
